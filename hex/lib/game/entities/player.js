@@ -61,6 +61,7 @@ EntityPlayer = ig.Entity.extend({
                 this.vel.y = 0;
                 this.hexat = this.hexdest;      // save location at
                 this.hexdest = undefined;       // clear the "destination hex"
+                this.currentAnim = this.anims.idle;
             }
         }
 //        var accel = 200;//this.standing ? this.accelGround : this.accelAir;
@@ -90,7 +91,7 @@ EntityPlayer = ig.Entity.extend({
     // select a hex to move this player to
     moveToHex: function(pos,iy) {
         var dx,dy,
-            mult = 3;
+            mult = 2;
         if (iy !== undefined) {
             pos = {ix:pos, iy:iy};                  // ix,iy
         }
@@ -108,6 +109,7 @@ EntityPlayer = ig.Entity.extend({
             this.vel.x = dx * mult;
             this.vel.y = dy * mult;
             this.flip = (dx < 0);
+            this.currentAnim = this.anims.run;
         }
     }
 

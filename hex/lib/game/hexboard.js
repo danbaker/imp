@@ -13,9 +13,16 @@ MyHexBoard = ig.Class.extend({
     a: 0,
     b: 0,
     c: 0,
+    xAdd: 0,                        // pixels from cell to cell x-direction and y-direction
+    yAdd: 0,
+    brdWide: 0,                     // board is N cells wide and high
+    brdHigh: 0,
+    board: [],
+
     font: new ig.Font( 'media/04b03.font.png' ),
     img: new ig.Image('media/hex2.png'),
     img3: new ig.Image('media/hex3.png'),
+    imgMtn: new ig.Image('media/hexMtn.png'),
 
 	
 	init: function() {
@@ -23,6 +30,14 @@ MyHexBoard = ig.Class.extend({
         this.c = 32;                                                     // 26: 44x52
         this.a = parseInt(this.c * 0.5, 10);
         this.b = parseInt(Math.sin(60/180*Math.PI) * this.c, 10);
+        var w = ig.system.width,
+            h = ig.system.height;
+        this.xAdd = this.b * 2;
+        this.yAdd = this.a + this.c;
+        this.brdWide = parseInt(w / this.xAdd, 10) * this.xAdd;
+        this.brdHigh = parseInt((h-this.a) / this.yAdd, 10) * this.yAdd;
+
+
         console.log("Width="+(2*this.b)+", Height="+(2*this.c));
         console.log("a="+this.a+"  b="+this.b+"  c="+this.c);
 	},
@@ -114,11 +129,8 @@ MyHexBoard = ig.Class.extend({
             x, y,
             pos;
 
-        xAdd = this.b * 2;
-        yAdd = this.a + this.c;
-
-        x = parseInt(mx / xAdd, 10);               // possible index
-        y = parseInt(my / yAdd, 10);
+        x = parseInt(mx / this.xAdd, 10);               // possible index
+        y = parseInt(my / this.yAdd, 10);
         for(iy=y-1; iy<y+2; iy++) {
             for(ix=x-1; ix<x+2; ix++) {
                 pos = this.calcHexTop(ix,iy);       // hex top/left position
@@ -152,27 +164,21 @@ MyHexBoard = ig.Class.extend({
 	draw: function() {
 
 		// Add your own drawing code here
-		var w = ig.system.width,
-			h = ig.system.height,
-            mx=ig.input.mouse.x,            // screen x,y of the mouse
+		var mx=ig.input.mouse.x,            // screen x,y of the mouse
             my=ig.input.mouse.y,
             x,y,                            // hex screen x,y (not adjusted for odd rows)
             tx,ty,                          // hex top screen x,y of the hex (adjusted for odd rows)
             mouseHover,
-            row = true,
-            xAdd = this.b * 2,
-            yAdd = this.a + this.c,
-            nWide = parseInt(w / xAdd, 10) * xAdd,
-            nHigh = parseInt((h-this.a) / yAdd, 10) * yAdd;
+            row = true;
 
-        for(y=this.offset.y; y<nHigh; y+= yAdd) {
-            for(x=this.offset.y; x<nWide; x+= xAdd) {
+        for(y=this.offset.y; y<this.brdHigh; y+= this.yAdd) {
+            for(x=this.offset.y; x<this.brdWide; x+= this.xAdd) {
                 // get the top/left corner of this hex
                 ty = y;
                 tx = x+(row?0:this.b);
                 mouseHover = false;
-                if (mx >= tx && mx < tx + xAdd) {
-                    if (my >= ty && my < ty + yAdd+this.a) {
+                if (mx >= tx && mx < tx + this.xAdd) {
+                    if (my >= ty && my < ty + this.yAdd+this.a) {
                         // mouse is *possibly* over this hex
                         if (this.isPointInHex(mx,my, tx,ty)) {
                             mouseHover = true;

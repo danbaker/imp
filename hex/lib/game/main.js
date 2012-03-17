@@ -105,7 +105,7 @@ MyGame = ig.Game.extend({
 
     tryMoveDir: function(dir) {
         console.log("Move direction: "+dir);
-        var pos = this.player.hexat;
+        var pos = { ix:this.player.hexat.ix, iy:this.player.hexat.iy };
         pos = this.hexboard.moveDir(pos, dir);
         this.player.moveToHex(pos);
     }
