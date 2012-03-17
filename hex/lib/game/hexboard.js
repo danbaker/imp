@@ -17,7 +17,10 @@ MyHexBoard = ig.Class.extend({
     yAdd: 0,
     brdWide: 0,                     // board is N cells wide and high
     brdHigh: 0,
+    brdPixelWide: 0,                // board size in pixels
+    brdPixelHigh: 0,
     brd: [],                        // brd[x][y] = {} = what is at this cell on the board (lots of data)
+    brdData: [],                    // brdData[0] = the default board-data for a "0" (Mountain/Edge)
     brdImages: [],                  // array of images
 
 
@@ -32,8 +35,10 @@ MyHexBoard = ig.Class.extend({
             h = ig.system.height;
         this.xAdd = this.b * 2;
         this.yAdd = this.a + this.c;
-        this.brdWide = parseInt(w / this.xAdd, 10) * this.xAdd;
-        this.brdHigh = parseInt((h-this.a) / this.yAdd, 10) * this.yAdd;
+        this.brdWide = parseInt(w / this.xAdd, 10);
+        this.brdHigh = parseInt((h-this.a) / this.yAdd, 10);
+        this.brdPixelWide = this.brdWide * this.xAdd;
+        this.brdPixelHigh = this.brdHigh * this.yAdd;
 
         this.loadImages();
         this.buildBoard();
@@ -54,17 +59,24 @@ MyHexBoard = ig.Class.extend({
 
     buildBoard: function() {
         var id;
+        this.brdData = [
+            { id: 0, solid:true },              //  0 Mountain/Edge
+            { id: 1 },                          //  1 Floor
+            { id: 1, start: true },             //  2 Starting Location
+            { id: 1, end: true},                //  3 Ending Location
+            { }
+        ];
         // create an empty board
         this.brd = [];
         for(var x=0; x<this.brdWide; x++) {
             this.brd[x] = [];
             for(var y=0; y<this.brdHigh; y++) {
                 id = ig.game.random() < 0.30? 0 : 1;    // 30% chance of mountain
-                this.brd[x][y] = { id: id };
+                this.brd[x][y] = ig.copy(this.brdData[id]);
             }
         }
         // force starting location to be "floor"
-        this.brd[1][7].id = 1;
+        this.brd[1][7] = ig.copy(this.brdData[2]);
     },
 
 	update: function() {
@@ -89,9 +101,10 @@ MyHexBoard = ig.Class.extend({
         if (pos.ix >= 0 && pos.ix < this.brdWide && pos.iy >= 0 && pos.iy < this.brdHigh) {
             return this.brd[pos.ix][pos.iy];
         }
-        // requested something that is OFF the board ... return a known object
-        return { id: 0 };
+        // requested something that is OFF the board ... return a known "Edge" object
+        return this.brdData[0];
     },
+
 
     // // // // // // // // // // //
     //
@@ -219,8 +232,8 @@ MyHexBoard = ig.Class.extend({
             row = true,
             brdData;                        // board-data object
 
-        for(iy=0, y=this.offset.y; y<this.brdHigh; y+= this.yAdd, iy++) {
-            for(ix=0, x=this.offset.y; x<this.brdWide; x+= this.xAdd, ix++) {
+        for(iy=0, y=this.offset.y; y<this.brdPixelHigh; y+= this.yAdd, iy++) {
+            for(ix=0, x=this.offset.y; x<this.brdPixelWide; x+= this.xAdd, ix++) {
                 brdData = this.getBoardDataAt(ix,iy);
                 // get the top/left corner of this hex
                 ty = y;

@@ -86,25 +86,28 @@ EntityPlayer = ig.Entity.extend({
     // select a hex to move this player to
     moveToHex: function(pos,iy) {
         var dx,dy,
+            brdData,
             mult = 2;
         if (iy !== undefined) {
             pos = {ix:pos, iy:iy};                  // ix,iy
         }
 
         if (!this.hexdest) {
-            // TODO: IF don't have a destination, THEN change
-            // TODO: IF have a destination AND new destination is "from destination" (go back) THEN change
             this.hexboard.calcHexTop(pos);              // tx,ty
             this.hexboard.calcHexCenter(pos);           // cx,cy
-            this.hexdest = pos;                         // {ix,iy, tx,ty, cx,cy}
-            this.accel.x = 0;
-            this.accel.y = 0;
-            dx = pos.cx - this.pos.x;
-            dy = pos.cy - this.pos.y;
-            this.vel.x = dx * mult;
-            this.vel.y = dy * mult;
-            this.flip = (dx < 0);
-            this.currentAnim = this.anims.run;
+            // Check if valid to move to hex
+            brdData = this.hexboard.getBoardDataAt(pos);
+            if (!brdData.solid) {
+                this.hexdest = pos;                         // {ix,iy, tx,ty, cx,cy}
+                this.accel.x = 0;
+                this.accel.y = 0;
+                dx = pos.cx - this.pos.x;
+                dy = pos.cy - this.pos.y;
+                this.vel.x = dx * mult;
+                this.vel.y = dy * mult;
+                this.flip = (dx < 0);
+                this.currentAnim = this.anims.run;
+            }
         }
     },
 
