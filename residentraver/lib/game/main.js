@@ -87,7 +87,7 @@ MyGame = ig.Game.extend({
 //    		this.font.draw( 'Hello world!', x, y, ig.Font.ALIGN.CENTER );
 //        }
         this.font.draw( 'FPS:'+this.fps_n, 20, 750 );
-        this.font.draw( ''+this.fps_n, 0, 360 );
+        this.font.draw( ''+this.fps_n, 0, 370 );
 	}
 });
 

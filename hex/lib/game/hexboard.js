@@ -8,8 +8,8 @@ ig.module(
 
 MyHexBoard = ig.Class.extend({
 	
-	// Load a font
     ticker: 0,
+    offset: { x:10, y: 10 },        // extra padding in top/left corner
     a: 0,
     b: 0,
     c: 0,
@@ -52,8 +52,8 @@ MyHexBoard = ig.Class.extend({
         }
         var xAdd = this.b * 2,              // horizontal distance between cells
             yAdd = this.a + this.c;         // vertical distance between cells
-        pos.tx = pos.ix * xAdd + (pos.iy%2?this.b:0);
-        pos.ty = pos.iy * yAdd;
+        pos.tx = pos.ix * xAdd + (pos.iy%2?this.b:0) + this.offset.x;
+        pos.ty = pos.iy * yAdd + this.offset.y;
         return pos;
     },
     // calculate the center of a hex that has screen-coordinates of (x,y)
@@ -129,8 +129,8 @@ MyHexBoard = ig.Class.extend({
             nWide = parseInt(w / xAdd, 10) * xAdd,
             nHigh = parseInt((h-this.a) / yAdd, 10) * yAdd;
 
-        for(y=0; y<nHigh; y+= yAdd) {
-            for(x=0; x<nWide; x+= xAdd) {
+        for(y=this.offset.y; y<nHigh; y+= yAdd) {
+            for(x=this.offset.y; x<nWide; x+= xAdd) {
                 // get the top/left corner of this hex
                 ty = y;
                 tx = x+(row?0:this.b);

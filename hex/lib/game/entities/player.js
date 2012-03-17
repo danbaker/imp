@@ -13,11 +13,12 @@ EntityPlayer = ig.Entity.extend({
 	size: {x:8, y:14},
     offset: {x: 4, y: 2},
     flip: false,
-    maxVel: {x: 100, y: 150},
+    maxVel: {x: 150, y: 150},
 
     // HexGame properties (nx,ny) is hex-number, (cx,cy) is center-pixel
     hexboard: null,
-    hexpos: {nx: 1, ny: 1, cx: 10, cy: 20},
+    hexpos: {ix: 1, iy: 1, cx: 10, cy: 20},
+    hexdest: null,
 
 	init: function( x, y, settings ) {
 		this.parent( x, y, settings );
@@ -67,14 +68,17 @@ EntityPlayer = ig.Entity.extend({
         if (iy !== undefined) {
             pos = {ix:pos, iy:iy};                  // ix,iy
         }
-        // TODO: IF don't have a destination, THEN change
-        // TODO: IF have a destination AND new destination is "from destination" (go back) THEN change
-        this.hexboard.calcHexTop(pos);              // tx,ty
-        this.hexboard.calcHexCenter(pos);           // cx,cy
-        this.hexpos = pos;
 
-        // TODO: TESTING
-        this.setPos(pos.cx, pos.cy);
+        if (!this.hexdest) {
+            // TODO: IF don't have a destination, THEN change
+            // TODO: IF have a destination AND new destination is "from destination" (go back) THEN change
+            this.hexboard.calcHexTop(pos);              // tx,ty
+            this.hexboard.calcHexCenter(pos);           // cx,cy
+            this.hexpos = pos;
+
+            // TODO: TESTING
+            this.setPos(pos.cx, pos.cy);
+        }
     }
 
 });
