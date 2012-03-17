@@ -20,6 +20,7 @@ MyHexBoard = ig.Class.extend({
     brdPixelWide: 0,                // board size in pixels
     brdPixelHigh: 0,
     brd: [],                        // brd[x][y] = {} = what is at this cell on the board (lots of data)
+    brdType: {},                    // enumerations of the available types (.EDGE = 0)
     brdData: [],                    // brdData[0] = the default board-data for a "0" (Mountain/Edge)
     brdImages: [],                  // array of images
 
@@ -41,6 +42,7 @@ MyHexBoard = ig.Class.extend({
         this.brdPixelHigh = this.brdHigh * this.yAdd;
 
         this.loadImages();
+        this.buildTypes();
         this.buildBoard();
 
         console.log("Hex Width="+(2*this.b)+", Height="+(2*this.c));
@@ -57,15 +59,26 @@ MyHexBoard = ig.Class.extend({
 
     },
 
-    buildBoard: function() {
-        var id;
+    buildTypes: function() {
+        this.brdType.EDGE = 0;          // edge of the board.  solid. can't edit or move.
+        this.brdType.MOUNTAIN = 1;      // standard mountain.  solid,
+        this.brdType.FLOOR = 2;         // standard floor.
+        this.brdType.START = 3;         // THE one-and-only start location
+        this.brdType.FINISH = 4;        // THE one-and-only finish location
+
+        var t = this.brdType;
         this.brdData = [
-            { id: 0, solid:true },              //  0 Mountain/Edge
-            { id: 1 },                          //  1 Floor
-            { id: 1, start: true },             //  2 Starting Location
-            { id: 1, end: true},                //  3 Ending Location
+            { type: t.EDGE, id: 0, solid:true },
+            { type: t.MOUNTAIN, id: 1 },
+            { type: t.FLOOR, id: 1 },
+            { type: t.START, id: 1 },
+            { type: t.FINISH, id: 1 },
             { }
         ];
+    },
+
+    buildBoard: function() {
+        var id;
         // create an empty board
         this.brd = [];
         for(var x=0; x<this.brdWide; x++) {
@@ -75,12 +88,13 @@ MyHexBoard = ig.Class.extend({
                 this.brd[x][y] = ig.copy(this.brdData[id]);
             }
         }
-        // force starting location to be "floor"
-        this.brd[1][7] = ig.copy(this.brdData[2]);
+        // create the starting location
+        this.brd[1][7] = ig.copy(this.brdData[this.brdType.START]);
     },
 
 	update: function() {
 		// Add your own, additional update code here
+        // TODO: animate board items (like switches and water)
 	},
 
     // // // // // // // // // // //
@@ -88,7 +102,8 @@ MyHexBoard = ig.Class.extend({
     //   Board Content Routines
     //
     //  board-data = {
-    //      id: 1               // index into this.brdImages[]
+    //      type: FLOOR         // the actual "type" of cell (index into this.brdData[])
+    //      id: 1               // the main image to draw (index into this.brdImages[])
     //  }
 
     // get the board-data object at a given index
