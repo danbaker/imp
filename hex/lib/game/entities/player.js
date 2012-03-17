@@ -56,12 +56,7 @@ EntityPlayer = ig.Entity.extend({
             if (dy > 0 && this.vel.y < 0) { this.vel.y = 0; this.pos.y = this.hexdest.cy; }
             if (Math.abs(dx) < 2 && Math.abs(dy) < 2) {
                 // arrived
-                this.setPos(this.hexdest);      // place them EXACTLY in the right spot
-                this.vel.x = 0;                 // stop them from moving
-                this.vel.y = 0;
-                this.hexat = this.hexdest;      // save location at
-                this.hexdest = undefined;       // clear the "destination hex"
-                this.currentAnim = this.anims.idle;
+                this.snapToHex(this.hexdest);
             }
         }
 //        var accel = 200;//this.standing ? this.accelGround : this.accelAir;
@@ -111,6 +106,15 @@ EntityPlayer = ig.Entity.extend({
             this.flip = (dx < 0);
             this.currentAnim = this.anims.run;
         }
+    },
+
+    snapToHex: function(pos) {
+        this.setPos(pos);                   // place them EXACTLY in the right spot
+        this.vel.x = 0;                     // stop them from moving
+        this.vel.y = 0;
+        this.hexat = pos;                   // save location at
+        this.hexdest = undefined;           // clear the "destination hex"
+        this.currentAnim = this.anims.idle; // stand still
     }
 
 });

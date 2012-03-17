@@ -28,9 +28,10 @@ MyGame = ig.Game.extend({
 		// Initialize your game here; bind keys etc.
         var pos;
         this.hexboard = new MyHexBoard();
-        pos = this.hexboard.calcHexTop(4,5);
+        pos = this.hexboard.calcHexTop(1,7);
         pos = this.hexboard.calcHexCenter(pos);
         this.player = new EntityPlayer(pos.cx,pos.cy, {hexboard:this.hexboard} );
+        this.player.snapToHex(pos);
         ig.input.bind( ig.KEY.MOUSE1, 'leftClick' );
         ig.input.bind( ig.KEY.LEFT_ARROW, 'left' );
         ig.input.bind( ig.KEY.RIGHT_ARROW, 'right' );
@@ -108,7 +109,23 @@ MyGame = ig.Game.extend({
         var pos = { ix:this.player.hexat.ix, iy:this.player.hexat.iy };
         pos = this.hexboard.moveDir(pos, dir);
         this.player.moveToHex(pos);
+    },
+
+
+    // // // // // // // // //
+    //
+    //  UTILITIES   ...   access via ig.game.random(100)
+    //
+
+    // get a random number
+    // in: max (if left off, get a number between 0 and 1) else between 0 and max-1
+    random: function(max) {
+        if (max === undefined) {
+            return Math.random();
+        }
+        return Math.floor(Math.random() * max);
     }
+
 });
 
 

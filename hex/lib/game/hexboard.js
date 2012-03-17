@@ -17,12 +17,10 @@ MyHexBoard = ig.Class.extend({
     yAdd: 0,
     brdWide: 0,                     // board is N cells wide and high
     brdHigh: 0,
-    board: [],
+    brd: [],                        // brd[x][y] = {} = what is at this cell on the board (lots of data)
+    brdImages: [],                  // array of images
 
-    font: new ig.Font( 'media/04b03.font.png' ),
-    img: new ig.Image('media/hex2.png'),
-    img3: new ig.Image('media/hex3.png'),
-    imgMtn: new ig.Image('media/hexMtn.png'),
+
 
 	
 	init: function() {
@@ -37,15 +35,63 @@ MyHexBoard = ig.Class.extend({
         this.brdWide = parseInt(w / this.xAdd, 10) * this.xAdd;
         this.brdHigh = parseInt((h-this.a) / this.yAdd, 10) * this.yAdd;
 
+        this.loadImages();
+        this.buildBoard();
 
-        console.log("Width="+(2*this.b)+", Height="+(2*this.c));
-        console.log("a="+this.a+"  b="+this.b+"  c="+this.c);
+        console.log("Hex Width="+(2*this.b)+", Height="+(2*this.c));
+        console.log("... a="+this.a+"  b="+this.b+"  c="+this.c);
+        console.log("Board size="+this.brdWide+"x"+this.brdHigh);
 	},
-	
-	update: function() {
 
+    loadImages: function() {
+        this.font =  new ig.Font( 'media/04b03.font.png' );
+        this.imgHover = new ig.Image('media/hexhover.png');
+
+        this.brdImages[0] = new ig.Image('media/hexMtn.png');
+        this.brdImages[1] = new ig.Image('media/hex2.png');
+
+    },
+
+    buildBoard: function() {
+        var id;
+        // create an empty board
+        this.brd = [];
+        for(var x=0; x<this.brdWide; x++) {
+            this.brd[x] = [];
+            for(var y=0; y<this.brdHigh; y++) {
+                id = ig.game.random() < 0.30? 0 : 1;    // 30% chance of mountain
+                this.brd[x][y] = { id: id };
+            }
+        }
+        // force starting location to be "floor"
+        this.brd[1][7].id = 1;
+    },
+
+	update: function() {
 		// Add your own, additional update code here
 	},
+
+    // // // // // // // // // // //
+    //
+    //   Board Content Routines
+    //
+    //  board-data = {
+    //      id: 1               // index into this.brdImages[]
+    //  }
+
+    // get the board-data object at a given index
+    // in: {} or (ix,iy) = location to get board-data from
+    // out: {} = board-data object (NEVER null)
+    getBoardDataAt: function(pos, iy) {
+        if (iy !== undefined) {
+            pos = {ix:pos, iy:iy};
+        }
+        if (pos.ix >= 0 && pos.ix < this.brdWide && pos.iy >= 0 && pos.iy < this.brdHigh) {
+            return this.brd[pos.ix][pos.iy];
+        }
+        // requested something that is OFF the board ... return a known object
+        return { id: 0 };
+    },
 
     // // // // // // // // // // //
     //
@@ -167,12 +213,15 @@ MyHexBoard = ig.Class.extend({
 		var mx=ig.input.mouse.x,            // screen x,y of the mouse
             my=ig.input.mouse.y,
             x,y,                            // hex screen x,y (not adjusted for odd rows)
+            ix,iy,
             tx,ty,                          // hex top screen x,y of the hex (adjusted for odd rows)
             mouseHover,
-            row = true;
+            row = true,
+            brdData;                        // board-data object
 
-        for(y=this.offset.y; y<this.brdHigh; y+= this.yAdd) {
-            for(x=this.offset.y; x<this.brdWide; x+= this.xAdd) {
+        for(iy=0, y=this.offset.y; y<this.brdHigh; y+= this.yAdd, iy++) {
+            for(ix=0, x=this.offset.y; x<this.brdWide; x+= this.xAdd, ix++) {
+                brdData = this.getBoardDataAt(ix,iy);
                 // get the top/left corner of this hex
                 ty = y;
                 tx = x+(row?0:this.b);
@@ -185,10 +234,9 @@ MyHexBoard = ig.Class.extend({
                         }
                     }
                 }
+                this.brdImages[brdData.id].draw(tx,ty);
                 if (mouseHover) {
-                    this.img3.draw(tx, ty);
-                } else {
-                    this.img.draw(tx, ty);
+                    this.imgHover.draw(tx, ty);
                 }
             }
             row = !row;
