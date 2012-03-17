@@ -18,6 +18,7 @@ EntityPlayer = ig.Entity.extend({
     // HexGame properties (nx,ny) is hex-number, (cx,cy) is center-pixel
     hexboard: null,         // THE game board
     hexdest: null,          // an object that describes a destination heading to
+    hexat: {ix: 5, iy: 5},  // where the player is at (IF !hexdest)
 
 	init: function( x, y, settings ) {
 		this.parent( x, y, settings );
@@ -58,6 +59,7 @@ EntityPlayer = ig.Entity.extend({
                 this.setPos(this.hexdest);      // place them EXACTLY in the right spot
                 this.vel.x = 0;                 // stop them from moving
                 this.vel.y = 0;
+                this.hexat = this.hexdest;      // save location at
                 this.hexdest = undefined;       // clear the "destination hex"
             }
         }

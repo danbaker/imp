@@ -68,6 +68,42 @@ MyHexBoard = ig.Class.extend({
         return pos;
     },
 
+    // check if two hex are touching
+    // in:  pos1 = {}
+    //      pos2 = {}
+    // out: n = distance between (1 means next to each other)
+    // hex layout:          (0,0)  (1,0)  (2,0)  (3,0) ...
+    //                          (0,1)  (1,1)  (2,1)  (3,1) ...
+    //                      (0,2)  (1,2)  (2,2)  (3,2) ...
+    isNext: function(pos1, pos2) {
+        var dir,
+            pos;
+        for(dir=1; dir<=6; dir++) {
+            pos = { ix:pos1.ix, iy:pos1.iy };
+            this.moveDir(pos, dir);
+            if (pos.ix === pos2.ix && pos.iy === pos2.iy) {
+                return true;        // got to pos2 from pos1 in 1 move
+            }
+        }
+        return false;
+    },
+
+    // move a position in a direction
+    // direction:           2   3
+    //                    1   x   4
+    //                      6   5
+    moveDir: function(pos, dir) {
+        var odd = pos.iy % 2;           // false means top(fist) row
+        switch (dir) {
+            case 1: pos.ix--; break;
+            case 2: pos.iy--; if (!odd) pos.ix--;   break;
+            case 3: pos.iy--; if (odd) pos.ix++;    break;
+            case 4: pos.ix++; break;
+            case 5: pos.iy++; if (odd) pos.ix++;    break;
+            case 6: pos.iy++; if (!odd) pos.ix--;   break;
+        }
+        return pos;
+    },
 
     // try to find a hex, given a mouse/screen position
     // in: (mx,my) = the mouse/screen position

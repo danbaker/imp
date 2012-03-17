@@ -34,6 +34,12 @@ MyGame = ig.Game.extend({
         ig.input.bind( ig.KEY.MOUSE1, 'leftClick' );
         ig.input.bind( ig.KEY.LEFT_ARROW, 'left' );
         ig.input.bind( ig.KEY.RIGHT_ARROW, 'right' );
+        ig.input.bind( ig.KEY.A, 'dir1' );
+        ig.input.bind( ig.KEY.W, 'dir2' );
+        ig.input.bind( ig.KEY.E, 'dir3' );
+        ig.input.bind( ig.KEY.D, 'dir4' );
+        ig.input.bind( ig.KEY.X, 'dir5' );
+        ig.input.bind( ig.KEY.Z, 'dir6' );
     },
 	
 	update: function() {
@@ -46,13 +52,20 @@ MyGame = ig.Game.extend({
         if( ig.input.pressed('leftClick') ) {
             mx=ig.input.mouse.x;            // screen x,y of the mouse
             my=ig.input.mouse.y;
-            console.log("Mouse Clicked: "+mx+","+my);
             pos = this.hexboard.findHexAt(mx,my);
             if (pos) {
-                console.log("... cell: "+pos.ix+","+pos.iy);
-                this.player.moveToHex(pos);
+                if (this.hexboard.isNext(pos, this.player.hexat)) {
+                    this.player.moveToHex(pos);
+                }
             }
         }
+        // check for keyboard request to move in a given direction
+        if (ig.input.pressed('dir1')) this.tryMoveDir(1);
+        if (ig.input.pressed('dir2')) this.tryMoveDir(2);
+        if (ig.input.pressed('dir3')) this.tryMoveDir(3);
+        if (ig.input.pressed('dir4')) this.tryMoveDir(4);
+        if (ig.input.pressed('dir5')) this.tryMoveDir(5);
+        if (ig.input.pressed('dir6')) this.tryMoveDir(6);
 
 		// Add your own, additional update code here
         this.hexboard.update();
@@ -88,7 +101,14 @@ MyGame = ig.Game.extend({
 //        }
         this.font.draw( 'FPS:'+this.fps_n, 20, 750 );
         this.font.draw( ''+this.fps_n, 0, 370 );
-	}
+	},
+
+    tryMoveDir: function(dir) {
+        console.log("Move direction: "+dir);
+        var pos = this.player.hexat;
+        pos = this.hexboard.moveDir(pos, dir);
+        this.player.moveToHex(pos);
+    }
 });
 
 
