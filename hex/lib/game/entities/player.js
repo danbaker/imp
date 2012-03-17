@@ -11,14 +11,13 @@ EntityPlayer = ig.Entity.extend({
     // Impact Properties
     animSheet: new ig.AnimationSheet( 'media/player.png', 16, 16 ),
 	size: {x:8, y:14},
-    offset: {x: 4, y: 2},
-    flip: false,
-    maxVel: {x: 150, y: 150},
+    offset: {x: 6, y: 8},               // offset player to be centered in the hex
+    flip: false,                        // true means walking left
+    maxVel: {x: 350, y: 350},
 
     // HexGame properties (nx,ny) is hex-number, (cx,cy) is center-pixel
-    hexboard: null,
-    hexpos: {ix: 1, iy: 1, cx: 10, cy: 20},
-    hexdest: null,
+    hexboard: null,         // THE game board
+    hexdest: null,          // an object that describes a destination heading to
 
 	init: function( x, y, settings ) {
 		this.parent( x, y, settings );
@@ -32,31 +31,54 @@ EntityPlayer = ig.Entity.extend({
         this.hexboard = settings.hexboard;
 	},
 
+
     setPos: function(x,y) {
-        this.pos.x = x - 4;
-        this.pos.y = y - 5;
+        if (y === undefined) {
+            y = x.cy;
+            x = x.cx;
+        }
+        this.pos.x = x;
+        this.pos.y = y;
     },
 
     update: function() {
+        var dx,dy;
         // move left or right
-        var accel = 200;//this.standing ? this.accelGround : this.accelAir;
-        if( ig.input.state('left') ) {
-            this.accel.x = -accel;
-            this.flip = true;
-            this.currentAnim = this.anims.run;
-        }else if( ig.input.state('right') ) {
-            this.accel.x = accel;
-            this.flip = false;
-            this.currentAnim = this.anims.run;
-        }else{
-            this.accel.x = 0;
-            this.vel.x = 0;
-            this.currentAnim = this.anims.idle;
+        if (this.hexdest) {
+            // player is moving toward a new hex ... check if arrived
+            dx = this.hexdest.cx - this.pos.x;
+            dy = this.hexdest.cy - this.pos.y;
+            // check if arrived in any single direction.  if so, stop that direction and snap to right spot.
+            if (dx < 0 && this.vel.x > 0) { this.vel.x = 0; this.pos.x = this.hexdest.cx; }
+            if (dx > 0 && this.vel.x < 0) { this.vel.x = 0; this.pos.x = this.hexdest.cx; }
+            if (dy < 0 && this.vel.y > 0) { this.vel.y = 0; this.pos.y = this.hexdest.cy; }
+            if (dy > 0 && this.vel.y < 0) { this.vel.y = 0; this.pos.y = this.hexdest.cy; }
+            if (Math.abs(dx) < 2 && Math.abs(dy) < 2) {
+                // arrived
+                this.setPos(this.hexdest);      // place them EXACTLY in the right spot
+                this.vel.x = 0;                 // stop them from moving
+                this.vel.y = 0;
+                this.hexdest = undefined;       // clear the "destination hex"
+            }
         }
-        // jump
-        if( this.standing && ig.input.pressed('jump') ) {
-            this.vel.y = -this.jump;
-        }
+//        var accel = 200;//this.standing ? this.accelGround : this.accelAir;
+//        if( ig.input.state('left') ) {
+//            this.accel.x = -accel;
+//            this.flip = true;
+//            this.currentAnim = this.anims.run;
+//        }else if( ig.input.state('right') ) {
+//            this.accel.x = accel;
+//            this.flip = false;
+//            this.currentAnim = this.anims.run;
+//        }else{
+//            this.accel.x = 0;
+//            this.vel.x = 0;
+//            this.currentAnim = this.anims.idle;
+//        }
+//        // jump
+//        if( this.standing && ig.input.pressed('jump') ) {
+//            this.vel.y = -this.jump;
+//        }
 
         // move!
         this.currentAnim.flip.x = this.flip;
@@ -65,6 +87,8 @@ EntityPlayer = ig.Entity.extend({
 
     // select a hex to move this player to
     moveToHex: function(pos,iy) {
+        var dx,dy,
+            mult = 3;
         if (iy !== undefined) {
             pos = {ix:pos, iy:iy};                  // ix,iy
         }
@@ -74,10 +98,14 @@ EntityPlayer = ig.Entity.extend({
             // TODO: IF have a destination AND new destination is "from destination" (go back) THEN change
             this.hexboard.calcHexTop(pos);              // tx,ty
             this.hexboard.calcHexCenter(pos);           // cx,cy
-            this.hexpos = pos;
-
-            // TODO: TESTING
-            this.setPos(pos.cx, pos.cy);
+            this.hexdest = pos;                         // {ix,iy, tx,ty, cx,cy}
+            this.accel.x = 0;
+            this.accel.y = 0;
+            dx = pos.cx - this.pos.x;
+            dy = pos.cy - this.pos.y;
+            this.vel.x = dx * mult;
+            this.vel.y = dy * mult;
+            this.flip = (dx < 0);
         }
     }
 
