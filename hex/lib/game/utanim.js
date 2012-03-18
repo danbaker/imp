@@ -6,7 +6,7 @@ ig.module(
 )
 .defines(function(){
 
-utanim = ig.Animation.extend({
+UtAnim = ig.Animation.extend({
 
     doneEventFired: false,          // true means we have already fired the event when the animation finished
 
@@ -19,7 +19,7 @@ utanim = ig.Animation.extend({
 
         // check if this animation just finished
         if (!this.doneEventFired && this.frame >= this.sequence.length-1) {
-            // TODO:  FIRE EVENT "animation complete"
+            // TODO: FIRE EVENT "animation complete"
             this.doneEventFired = true;
             console.log("ANIMATION FINISHED");
         }
