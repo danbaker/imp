@@ -44,9 +44,16 @@ EntityPlayer = ig.Entity.extend({
 
     update: function() {
         var dx,dy;
-        // move left or right
+        // IF player is moving:
         if (this.hexdest) {
-            // player is moving toward a new hex ... check if arrived
+            // player is moving toward a new hex ... perorm checks
+            // 1) check if player is at the point of leaving original hex and entering destination hex (board state changes)
+            if (!this.hexdest.entered && !this.hexboard.isPointInHex(this.pos.x,this.pos.y,this.hexat)) {
+                // LEFT the original hex / ENTERED the destination hex
+                this.hexdest.entered = true;
+                this.hexboard.playerMoved(this.hexat, this.hexdest);
+            }
+            // 2) check if player has arrived at the center of the destination hex (done moving)
             dx = this.hexdest.cx - this.pos.x;
             dy = this.hexdest.cy - this.pos.y;
             // check if arrived in any single direction.  if so, stop that direction and snap to right spot.
@@ -55,30 +62,12 @@ EntityPlayer = ig.Entity.extend({
             if (dy < 0 && this.vel.y > 0) { this.vel.y = 0; this.pos.y = this.hexdest.cy; }
             if (dy > 0 && this.vel.y < 0) { this.vel.y = 0; this.pos.y = this.hexdest.cy; }
             if (Math.abs(dx) < 2 && Math.abs(dy) < 2) {
-                // arrived
+                // arrived at the CENTER of the destination hex
+                // player has just transitioned from current hex to a new hex
                 this.snapToHex(this.hexdest);
             }
         }
-//        var accel = 200;//this.standing ? this.accelGround : this.accelAir;
-//        if( ig.input.state('left') ) {
-//            this.accel.x = -accel;
-//            this.flip = true;
-//            this.currentAnim = this.anims.run;
-//        }else if( ig.input.state('right') ) {
-//            this.accel.x = accel;
-//            this.flip = false;
-//            this.currentAnim = this.anims.run;
-//        }else{
-//            this.accel.x = 0;
-//            this.vel.x = 0;
-//            this.currentAnim = this.anims.idle;
-//        }
-//        // jump
-//        if( this.standing && ig.input.pressed('jump') ) {
-//            this.vel.y = -this.jump;
-//        }
-
-        // move!
+        // move
         this.currentAnim.flip.x = this.flip;
         this.parent();
     },

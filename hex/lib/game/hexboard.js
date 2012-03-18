@@ -2,7 +2,8 @@ ig.module(
 	'game.hexboard'
 )
 .requires(
-	'impact.game'
+	'impact.game',
+    'game.utanim'
 )
 .defines(function(){
 
@@ -53,18 +54,23 @@ MyHexBoard = ig.Class.extend({
     loadImages: function() {
         this.font =  new ig.Font( 'media/04b03.font.png' );
         this.imgHover = new ig.Image('media/hexhover.png');
+        this.imgSwitch = new ig.AnimationSheet( 'media/hexRowSwitch.png', 56, 65 ),
 
         this.brdImages[0] = new ig.Image('media/hexMtn.png');
         this.brdImages[1] = new ig.Image('media/hex2.png');
 
     },
 
+    // build/create the entire set/collection of constant board-data information
+    // like: "SWITCH w/ two animations"
     buildTypes: function() {
+        var self = this;
         this.brdType.EDGE = 0;          // edge of the board.  solid. can't edit or move.
         this.brdType.MOUNTAIN = 1;      // standard mountain.  solid,
         this.brdType.FLOOR = 2;         // standard floor.
         this.brdType.START = 3;         // THE one-and-only start location
         this.brdType.FINISH = 4;        // THE one-and-only finish location
+        this.brdType.SWITCH = 5;        // on/off switch plate
 
         var t = this.brdType;
         this.brdData = [
@@ -73,10 +79,34 @@ MyHexBoard = ig.Class.extend({
             { type: t.FLOOR, id: 1 },
             { type: t.START, id: 1 },
             { type: t.FINISH, id: 1 },
+            { type: t.SWITCH, id: 1, down:true, build: function() {
+                this.anim1 = new utanim( self.imgSwitch, 0.03, [3,2,1,0,1,2,3,4,5,6,7,8], true );
+                this.anim2 = new utanim( self.imgSwitch, 0.03, [8,7,6,5,4,3,2,1,0,1,2,3], true );
+                this.anim = this.down? this.anim2 : this.anim1;
+                this.anim.gotoFrame(20);                      // start switch at the ending-anim (already depressed)
+                }
+            },
             { }
         ];
     },
 
+    // build/create one hex on the board
+    buildOneHex: function(idx, settings) {
+        var brdData = ig.copy(this.brdData[idx]);
+        if (settings) {
+            for(var key in settings) {
+                if (settings.hasOwnProperty(key)) {
+                    brdData[key] = settings[key];
+                }
+            }
+        }
+        if (brdData.build) {
+            brdData.build();
+        }
+        return brdData;
+    },
+
+    // build/create the entire board
     buildBoard: function() {
         var id;
         // create an empty board
@@ -85,16 +115,26 @@ MyHexBoard = ig.Class.extend({
             this.brd[x] = [];
             for(var y=0; y<this.brdHigh; y++) {
                 id = ig.game.random() < 0.30? 0 : 1;    // 30% chance of mountain
-                this.brd[x][y] = ig.copy(this.brdData[id]);
+                this.brd[x][y] = this.buildOneHex(id);
             }
         }
         // create the starting location
-        this.brd[1][7] = ig.copy(this.brdData[this.brdType.START]);
+        this.brd[1][7] = this.buildOneHex(this.brdType.START);                      // START Location
+        this.brd[2][7] = this.buildOneHex(this.brdType.SWITCH, {down:true});        // DEBUG Switch
     },
 
 	update: function() {
 		// Add your own, additional update code here
         // TODO: animate board items (like switches and water)
+        var x,y, brdData;
+        for(x=0; x<this.brdWide; x++) {
+            for(y=0; y<this.brdHigh; y++) {
+                brdData = this.brd[x][y];
+                if (brdData.anim) {
+                    brdData.anim.update();
+                }
+            }
+        }
 	},
 
     // // // // // // // // // // //
@@ -102,8 +142,12 @@ MyHexBoard = ig.Class.extend({
     //   Board Content Routines
     //
     //  board-data = {
-    //      type: FLOOR         // the actual "type" of cell (index into this.brdData[])
-    //      id: 1               // the main image to draw (index into this.brdImages[])
+    //      type: FLOOR             // the actual "type" of cell (index into this.brdData[])
+    //      id: 1                   // the main image to draw (index into this.brdImages[])
+    //      solid: true             // true means player can NOT walk on it
+    //      anim: new ig.Animation  // an animation object
+    //
+    //      down:true               // state of a floor switch (true means depressed, false means up)
     //  }
 
     // get the board-data object at a given index
@@ -263,13 +307,41 @@ MyHexBoard = ig.Class.extend({
                     }
                 }
                 this.brdImages[brdData.id].draw(tx,ty);
+                if (brdData.anim) {
+                    brdData.anim.draw(tx,ty);
+                }
                 if (mouseHover) {
                     this.imgHover.draw(tx, ty);
                 }
             }
             row = !row;
         }
-	}
+	},
+
+
+    // // // // // // // //
+
+    // Playaer just transitioned from one hex to another hex
+    // in:  from = the hex player moved FROM
+    //      to   = the hex player moved TO
+    playerMoved: function(from, to) {
+        // TODO: handle pressure-plates when player LEAVES a hex and ENTERS a hex
+        // TODO: handle switch when player ENTERS a hex
+        var brdData;
+
+        brdData = this.getBoardDataAt(to);
+        if (brdData.type === this.brdType.SWITCH) {
+            // toggle switch state
+            brdData.down = !brdData.down;
+            if (brdData.down) {
+                brdData.anim = brdData.anim2;         // anim2 shows the switch down/depressed
+            } else {
+                brdData.anim = brdData.anim1;
+            }
+            brdData.anim.gotoFrame(0);
+            brdData.anim.rewind();
+        }
+    }
 });
 
 
