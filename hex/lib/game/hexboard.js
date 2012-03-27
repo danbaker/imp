@@ -3,7 +3,8 @@ ig.module(
 )
 .requires(
 	'impact.game',
-    'game.utanim'
+    'game.utanim',
+    'game.utpubsub'
 )
 .defines(function(){
 
@@ -24,7 +25,7 @@ MyHexBoard = ig.Class.extend({
     brdType: {},                    // enumerations of the available types (.EDGE = 0)
     brdData: [],                    // brdData[0] = the default board-data for a "0" (Mountain/Edge)
     brdImages: [],                  // array of images
-
+    pubsub: UT.PubSub.getInstance(),
 
 
 	
@@ -340,7 +341,7 @@ MyHexBoard = ig.Class.extend({
 
     // // // // // // // //
 
-    // Playaer just transitioned from one hex to another hex
+    // Player just transitioned from one hex to another hex
     // in:  from = the hex player moved FROM
     //      to   = the hex player moved TO
     playerMoved: function(from, to) {
@@ -349,6 +350,7 @@ MyHexBoard = ig.Class.extend({
         var brdData;
 
         brdData = this.getBoardDataAt(to);
+        this.pubsub.publish("EVT:PlayerMoved");
         if (brdData.type === this.brdType.SWITCH) {
             // toggle switch state
             brdData.down = !brdData.down;
