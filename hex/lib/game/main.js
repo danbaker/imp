@@ -1,4 +1,7 @@
-ig.module( 
+
+UT = {};
+
+ig.module(
 	'game.main' 
 )
 .requires(

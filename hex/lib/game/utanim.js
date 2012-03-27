@@ -6,7 +6,7 @@ ig.module(
 )
 .defines(function(){
 
-UtAnim = ig.Animation.extend({
+UT.Anim = ig.Animation.extend({
 
     doneEventFired: false,          // true means we have already fired the event when the animation finished
 

@@ -84,18 +84,18 @@ MyHexBoard = ig.Class.extend({
             { type: t.FINISH, id: t.FLOOR },
             { type: t.SWITCH, id: t.FLOOR, down:true,
                 build: function() {
-                    this.anim1 = new UtAnim( self.imgSwitch, 0.03, [3,2,1,0,1,2,3,4,5,6,7,8], true );
-                    this.anim2 = new UtAnim( self.imgSwitch, 0.03, [8,7,6,5,4,3,2,1,0,1,2,3], true );
+                    this.anim1 = new UT.Anim( self.imgSwitch, 0.03, [3,2,1,0,1,2,3,4,5,6,7,8], true );
+                    this.anim2 = new UT.Anim( self.imgSwitch, 0.03, [8,7,6,5,4,3,2,1,0,1,2,3], true );
                     this.anim = this.down? this.anim2 : this.anim1;
                     this.anim.gotoFrame(20);                      // start switch at the ending-anim (already depressed)
                 }
             },
             { type: t.WALL, id: t.FLOOR, down:true, solid:true,
                 build: function() {
-                    this.anim1 = new UtAnim( self.imgWall, 0.07, [0,1,2,3,4,5,6,7,8,9], true );
-                    this.anim2 = new UtAnim( self.imgWall, 0.07, [9,8,7,6,5,4,3,2,1,0], true );
+                    this.anim1 = new UT.Anim( self.imgWall, 0.15, [0,1,2,3,4,5,6,7,8,9], true );
+                    this.anim2 = new UT.Anim( self.imgWall, 0.15, [9,8,7,6,5,4,3,2,1,0], true );
                     this.anim = this.down? this.anim2 : this.anim1;
-                    this.anim.gotoFrame(20);
+//                    this.anim.gotoFrame(20);
                 }
             },
             { }
