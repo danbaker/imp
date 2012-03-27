@@ -564,7 +564,7 @@ debugDump: function() {
 		}
 	}
 	// HANDLES
-	console.log("PubSub HANDLES:");
+	console.log("PubSub HANDLES: ");
 	for(handle in this._handles) {
 		if (this._handles.hasOwnProperty(handle)) {
 			evtData = this._handles[handle];			// { eventID:eventID, priority: N }			
