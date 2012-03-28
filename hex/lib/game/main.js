@@ -8,7 +8,8 @@ ig.module(
 	'impact.game',
 	'impact.font',
     'game.hexboard',
-    'game.entities.player'
+    'game.entities.player',
+    'game.gameevents'
 )
 .defines(function(){
 
@@ -21,6 +22,7 @@ MyGame = ig.Game.extend({
     ticker: 0,
     hexboard: null,
     player: null,
+    gameevents: null,
 
     // Frames-Per-Second data
     fps_ts: 0,          // timestamp when starting counting frames
@@ -44,6 +46,8 @@ MyGame = ig.Game.extend({
         ig.input.bind( ig.KEY.D, 'dir4' );
         ig.input.bind( ig.KEY.X, 'dir5' );
         ig.input.bind( ig.KEY.Z, 'dir6' );
+        this.gameevents = GameEvents.getInstance();
+        this.gameevents.init(this.hexboard, this.player);
     },
 	
 	update: function() {

@@ -89,6 +89,16 @@ MyHexBoard = ig.Class.extend({
                     this.anim2 = new UT.Anim( self.imgSwitch, 0.03, [8,7,6,5,4,3,2,1,0,1,2,3], true );
                     this.anim = this.down? this.anim2 : this.anim1;
                     this.anim.gotoFrame(20);                      // start switch at the ending-anim (already depressed)
+                },
+                event_PlayerEntered: function() {
+                    this.down = !this.down;
+                    if (this.down) {
+                        this.anim = this.anim2;         // anim2 shows the switch down/depressed
+                    } else {
+                        this.anim = this.anim1;
+                    }
+                    this.anim.gotoFrame(0);
+                    this.anim.rewind();
                 }
             },
             { type: t.WALL, id: t.FLOOR, down:true, solid:true,
@@ -336,33 +346,8 @@ MyHexBoard = ig.Class.extend({
             }
             row = !row;
         }
-	},
+	}
 
-
-    // // // // // // // //
-
-    // Player just transitioned from one hex to another hex
-    // in:  from = the hex player moved FROM
-    //      to   = the hex player moved TO
-    playerMoved: function(from, to) {
-        // TODO: handle pressure-plates when player LEAVES a hex and ENTERS a hex
-        // TODO: handle switch when player ENTERS a hex
-        var brdData;
-
-        brdData = this.getBoardDataAt(to);
-        this.pubsub.publish("EVT:PlayerMoved");
-        if (brdData.type === this.brdType.SWITCH) {
-            // toggle switch state
-            brdData.down = !brdData.down;
-            if (brdData.down) {
-                brdData.anim = brdData.anim2;         // anim2 shows the switch down/depressed
-            } else {
-                brdData.anim = brdData.anim1;
-            }
-            brdData.anim.gotoFrame(0);
-            brdData.anim.rewind();
-        }
-    }
 });
 
 

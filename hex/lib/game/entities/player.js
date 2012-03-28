@@ -2,7 +2,8 @@ ig.module(
 	'game.entities.player'
 )
 .requires(
-	'impact.entity'
+	'impact.entity',
+    'game.utpubsub'
 )
 .defines(function(){
 
@@ -14,6 +15,8 @@ EntityPlayer = ig.Entity.extend({
     offset: {x: 6, y: 8},               // offset player to be centered in the hex
     flip: false,                        // true means walking left
     maxVel: {x: 350, y: 350},
+    pubsub: UT.PubSub.getInstance(),
+
 
     // HexGame properties (nx,ny) is hex-number, (cx,cy) is center-pixel
     hexboard: null,         // THE game board
@@ -51,7 +54,8 @@ EntityPlayer = ig.Entity.extend({
             if (!this.hexdest.entered && !this.hexboard.isPointInHex(this.pos.x,this.pos.y,this.hexat)) {
                 // LEFT the original hex / ENTERED the destination hex
                 this.hexdest.entered = true;
-                this.hexboard.playerMoved(this.hexat, this.hexdest);
+                this.pubsub.publish("BRD:PlayerExited", {hex:this.hexat});
+                this.pubsub.publish("BRD:PlayerEntered", {hex:this.hexdest});
             }
             // 2) check if player has arrived at the center of the destination hex (done moving)
             dx = this.hexdest.cx - this.pos.x;
@@ -96,10 +100,12 @@ EntityPlayer = ig.Entity.extend({
                 this.vel.y = dy * mult;
                 this.flip = (dx < 0);
                 this.currentAnim = this.anims.run;
+                this.pubsub.publish("BRD:PlayerLeaving", {hex:this.hexat});
             }
         }
     },
 
+    // player has finished moving, and is now standing in the center of the hex(pos)
     snapToHex: function(pos) {
         this.setPos(pos);                   // place them EXACTLY in the right spot
         this.vel.x = 0;                     // stop them from moving
@@ -107,6 +113,7 @@ EntityPlayer = ig.Entity.extend({
         this.hexat = pos;                   // save location at
         this.hexdest = undefined;           // clear the "destination hex"
         this.currentAnim = this.anims.idle; // stand still
+        this.pubsub.publish("BRD:PlayerStanding", {hex:this.hexat});
     }
 
 });
