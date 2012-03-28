@@ -21,6 +21,7 @@ GameEvents = ig.Class.extend({
         if (!this.subscribed) {
             this.subscribed = true;
 
+            // @TODO: allow for subscribing to "BRD:" or set a "class" on events
             this.pubsub.subscribe("BRD:PlayerLeaving", function(evt, data) {        // player start walking. will leave this hex
                 self.brdEvent(evt, data);
             });
@@ -30,7 +31,19 @@ GameEvents = ig.Class.extend({
             this.pubsub.subscribe("BRD:PlayerEntered", function(evt, data) {        // just crossed the edge into this hex
                 self.brdEvent(evt, data);
             });
-            this.pubsub.subscribe("BRD:PlayerStanding", function(evt, data) {       // ust stopped in the center of this hex
+            this.pubsub.subscribe("BRD:PlayerStanding", function(evt, data) {       // just stopped in the center of this hex
+                self.brdEvent(evt, data);
+            });
+            this.pubsub.subscribe("ANIM:SwitchUp", function(evt, data) {            // switch animation just completed.  Switch is now "UP"
+                self.brdEvent(evt, data);
+            });
+            this.pubsub.subscribe("ANIM:SwitchDown", function(evt, data) {          // switch anim just finished.  Switch is now "DOWN"
+                self.brdEvent(evt, data);
+            });
+            this.pubsub.subscribe("ANIM:WallUp", function(evt, data) {            // switch animation just completed.  Switch is now "UP"
+                self.brdEvent(evt, data);
+            });
+            this.pubsub.subscribe("ANIM:WallDown", function(evt, data) {          // switch anim just finished.  Switch is now "DOWN"
                 self.brdEvent(evt, data);
             });
         }
@@ -42,7 +55,7 @@ GameEvents = ig.Class.extend({
         var evtParts = evt.split(":");                      // [0]="BRD", [1]="PlayerEntered"
         var fncName = "event_"+evtParts[1];                 // "event_PlayerEntered"
         var brdData = this.hexboard.getBoardDataAt(pos);    // brdData = the hex this event happened in
-        this.log("GameEvent: "+evt+" hex("+pos.ix+","+pos.iy+")");
+        this.log("GameEvent: "+evt+" hex("+pos.ix+","+pos.iy+") "+(data.done?"DONE":"")+"  "+(data.start?"START":""));
         if (brdData) {
             if (brdData[fncName]) {
                 // call event on the hex on the board
