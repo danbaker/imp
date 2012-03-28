@@ -84,6 +84,7 @@ MyHexBoard = ig.Class.extend({
             { type: t.START, id: t.FLOOR },
             { type: t.FINISH, id: t.FLOOR },
             { type: t.SWITCH, id: t.FLOOR, down:true,
+                operate: [],    // array of hex-positions that this switch "operates"
                 build: function() {
                     this.anim1 = new UT.Anim( self.imgSwitch, 0.03, [3,2,1,0,1,2,3,4,5,6,7,8], true, "SwitchUp" );
                     this.anim2 = new UT.Anim( self.imgSwitch, 0.03, [8,7,6,5,4,3,2,1,0,1,2,3], true, "SwitchDown" );
@@ -100,6 +101,18 @@ MyHexBoard = ig.Class.extend({
                     this.anim.gotoFrame(0);
                     this.anim.rewind();
                     this.anim.start();          // fire "animation started event"
+                },
+                event_SwitchUp: function(data) {
+                    if (data.done) {
+                        self.log("Switch is now UP");
+                        self.fireCode("Operate", this, "up");
+                    }
+                },
+                event_SwitchDown: function(data) {
+                    if (data.done) {
+                        self.log("Switch is now DOWN");
+                        self.fireCode("Operate", this, "down");
+                    }
                 }
             },
             { type: t.WALL, id: t.FLOOR, down:true, solid:true,
@@ -108,11 +121,57 @@ MyHexBoard = ig.Class.extend({
                     this.anim2 = new UT.Anim( self.imgWall, 0.15, [9,8,7,6,5,4,3,2,1,0], true, "WallDown" );
                     this.anim = this.down? this.anim2 : this.anim1;
 //                    this.anim.gotoFrame(20);
+                },
+                event_WallUp: function(data) {
+                    this.solid = true;                  // if wall is started up, or finished up -- solid wall
+                },
+                event_WallDown: function(data) {
+                    if (data.done) {
+                        this.solid = false;             // when wall is all the way down -- not solid
+                    }
+                },
+                doOperate_up: function() {
+                    console.log("operate UP");
+                    this.down = false;
+                    this.anim = this.down? this.anim2 : this.anim1;
+                    this.anim.rewind();
+                    this.anim.start();          // fire "animation started event"
+                },
+                doOperate_down: function() {
+                    console.log("operate DOWN");
+                    this.down = true;
+                    this.anim = this.down? this.anim2 : this.anim1;
+                    this.anim.rewind();
+                    this.anim.start();          // fire "animation started event"
                 }
             },
             { }
         ];
     },
+    // fire/run a chunk of code on a known hex-board-data
+    fireCode: function(fncName, brdData, data) {
+        var fnc = "fireCode_"+fncName;
+        console.log("fireCode.  fnc="+fnc);
+        if (this[fnc]) {
+            this[fnc](brdData, data);
+        }
+    },
+    // process all "operate" hexes (dir="up" or "down")
+    fireCode_Operate: function(brdData, dir) {
+        console.log(brdData.operate);
+        if (brdData.operate) {
+            for(var idx=0; idx<brdData.operate.length; idx++) {
+                var pos = brdData.operate[idx];
+                var op = this.getBoardDataAt(pos);      // op = 1 brdData to operate
+                var fnc = "doOperate_"+dir;
+                console.log(op);
+                if(op[fnc]) {
+                    op[fnc](brdData);
+                }
+            }
+        }
+    },
+
 
     // build/create one hex on the board
     buildOneHex: function(idx, x,y, settings) {
@@ -156,7 +215,7 @@ MyHexBoard = ig.Class.extend({
         // create the starting location
         // DEBUG BOARD FILL-IN:
         this.brd[1][7] = this.buildOneHex(this.brdType.START, 1,7);
-        this.brd[2][7] = this.buildOneHex(this.brdType.SWITCH, 2,7, {down:true});
+        this.brd[2][7] = this.buildOneHex(this.brdType.SWITCH, 2,7, {down:true, operate:[{ix:4,iy:6}]});
         this.brd[4][6] = this.buildOneHex(this.brdType.WALL, 4,6, {down:true, solid:false});
         this.brd[4][8] = this.buildOneHex(this.brdType.WALL, 4,8, {down:false, solid:true});
     },
@@ -356,7 +415,11 @@ MyHexBoard = ig.Class.extend({
             }
             row = !row;
         }
-	}
+	},
+
+    log:function(msg) {
+        console.log(msg);
+    }
 
 });
 
