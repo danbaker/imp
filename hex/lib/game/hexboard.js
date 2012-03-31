@@ -105,9 +105,36 @@ MyHexBoard = ig.Class.extend({
         // create the starting location
         // DEBUG BOARD FILL-IN:
         this.brd[1][7] = this.buildOneHex(t.START, 1,7);
-        this.brd[2][7] = this.buildOneHex(t.SWITCH, 2,7, {down:true, operate:[{ix:3,iy:6},{ix:4,iy:8}]});
+        this.brd[2][7] = this.buildOneHex(t.SWITCH, 2,7, {down:true, operate:[{ix:3,iy:6}]});
         this.brd[3][6] = this.buildOneHex(t.WALL, 3,6, {down:true, solid:false});
         this.brd[4][8] = this.buildOneHex(t.WALL, 4,8, {down:false, solid:true});
+        this.brd[5][7] = this.buildOneHex(t.PLATE, 5,7, {down:false, operate:[{ix:4,iy:8}]});
+
+        this._fixupBoardReferences();
+    },
+
+    _fixupBoardReferences: function() {
+        for(var x=0; x<this.brdWide; x++) {
+            for(var y=0; y<this.brdHigh; y++) {
+                var bd = this.getBoardDataAt(x,y);
+                this._fixupReferencesArray(bd.operate);         // fixup "operate" array of references
+            }
+        }
+    },
+    _fixupReferencesArray: function(ary) {
+        if (ary) {
+            for(var idx=0; idx<ary.length; idx++) {
+                var item = ary[idx];
+                if (item.type === undefined) {
+                    // This item in the array appears to be a "position" not a "reference to an actual board hex cell"
+                    var bd = this.getBoardDataAt(item);
+                    if (bd !== this.hexcell.brdData[0]) {
+                        // replace the position w/ an actual ptr/reference to the board-cell
+                        ary[idx] = bd;
+                    }
+                }
+            }
+        }
     },
 
 	update: function() {

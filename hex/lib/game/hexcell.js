@@ -44,11 +44,13 @@ HexCell = ig.Class.extend({
         this.brdType.FLOOR = 2;         // standard floor.
         this.brdType.START = 3;         // THE one-and-only start location
         this.brdType.FINISH = 4;        // THE one-and-only finish location
-        this.brdType.SWITCH = 5;        // on/off switch plate
+        this.brdType.SWITCH = 5;        // on/off switch (stays in up or down position)
         this.brdType.WALL = 6;          // up-and-down wall
+        this.brdType.PLATE = 7;         // on.off plate-switch (only down if something is ON the plate)
 
         this.imgSwitch = new ig.AnimationSheet( 'media/hexRowSwitch.png', 56, 65 );
         this.imgWall = new ig.AnimationSheet( 'media/hexRowWall.png', 56, 65 );
+        this.imgPlate = new ig.AnimationSheet( 'media/hexRowPlate.png', 56, 65 );
         this.brdImages[this.brdType.MOUNTAIN] = new ig.Image('media/hexMtn.png');
         this.brdImages[this.brdType.FLOOR] = new ig.Image('media/hex2.png');
     },
@@ -144,10 +146,46 @@ HexCell = ig.Class.extend({
                     this.anim.start();          // fire "animation started event"
                 }
             },
+            { type: t.PLATE, id: t.FLOOR, down:true,
+                operate: [],    // array of hex-positions that this switch "operates"
+                build: function() {
+                    this.anim1 = new UT.Anim( self.imgPlate, 0.03, [0,1,2,3,4], true, "SwitchUp" );
+                    this.anim2 = new UT.Anim( self.imgPlate, 0.03, [4,3,2,1,0], true, "SwitchDown" );
+                    this.anim = this.down? this.anim2 : this.anim1;
+                    //this.anim.gotoFrame(20);                      // start switch at the ending-anim (already depressed)
+                },
+                event_PlayerEntered: function() {
+                    this.down = true;
+                    this.anim = this.anim2;         // anim2 shows the switch down/depressed
+                    this.anim.gotoFrame(0);
+                    this.anim.rewind();
+                    this.anim.start();          // fire "animation started event"
+                },
+                event_PlayerExited: function() {
+                    this.down = false;
+                    this.anim = this.anim1;         // anim2 shows the switch down/depressed
+                    this.anim.gotoFrame(0);
+                    this.anim.rewind();
+                    this.anim.start();          // fire "animation started event"
+                },
+                event_SwitchUp: function(data) {
+                    if (data.done) {
+                        self.log("Switch is now UP");
+                        self.fireCode("Operate", this, "up");
+                    }
+                },
+                event_SwitchDown: function(data) {
+                    if (data.done) {
+                        self.log("Switch is now DOWN");
+                        self.fireCode("Operate", this, "down");
+                    }
+                }
+            },
             { }
         ];
         this._prepareBrdData();
     },
+    // add common functions to every board-data item
     _prepareBrdData: function() {
         var idx,
             bd,
@@ -164,23 +202,21 @@ HexCell = ig.Class.extend({
     // fire/run a chunk of code on a known hex-board-data
     fireCode: function(fncName, brdData, data) {
         var fnc = "fireCode_"+fncName;
-        console.log("fireCode.  fnc="+fnc);
+        //console.log("fireCode.  fnc="+fnc);
         if (this[fnc]) {
             this[fnc](brdData, data);
         }
     },
     // process all "operate" hexes (dir="up" or "down")
     fireCode_Operate: function(brdData, dir) {
-        console.log(brdData.operate);
+        //console.log(brdData.operate);
         if (brdData.operate) {
             for(var idx=0; idx<brdData.operate.length; idx++) {
-                var pos = brdData.operate[idx];
-                var op = this.hexboard.getBoardDataAt(pos);      // op = 1 brdData to operate
+                var bd = brdData.operate[idx];      // bd = 1 brdData to operate
                 var fnc = "doOperate_"+dir;
-                console.log(op);
-                if(op[fnc]) {
+                if(bd[fnc]) {
                     // run operation on another board-data
-                    op[fnc](brdData);
+                    bd[fnc](brdData);
                 }
             }
         }
