@@ -4,7 +4,8 @@ ig.module(
 .requires(
 	'impact.game',
     'game.utanim',
-    'game.utpubsub'
+    'game.utpubsub',
+    'game.hexcell'
 )
 .defines(function(){
 
@@ -22,9 +23,10 @@ MyHexBoard = ig.Class.extend({
     brdPixelWide: 0,                // board size in pixels
     brdPixelHigh: 0,
     brd: [],                        // brd[x][y] = {} = what is at this cell on the board (lots of data)
-    brdType: {},                    // enumerations of the available types (.EDGE = 0)
-    brdData: [],                    // brdData[0] = the default board-data for a "0" (Mountain/Edge)
-    brdImages: [],                  // array of images
+//    brdType: {},                    // enumerations of the available types (.EDGE = 0)
+//    brdData: [],                    // brdData[0] = the default board-data for a "0" (Mountain/Edge)
+//    brdImages: [],                  // array of images
+    hexcell: null,                  // THE set of possible hex cells and their code
     pubsub: UT.PubSub.getInstance(),
 
 
@@ -43,8 +45,8 @@ MyHexBoard = ig.Class.extend({
         this.brdPixelWide = this.brdWide * this.xAdd;
         this.brdPixelHigh = this.brdHigh * this.yAdd;
 
+        this.hexcell = new HexCell(this);
         this.loadImages();
-        this.buildTypes();
         this.buildBoard();
 
         console.log("Hex Width="+(2*this.b)+", Height="+(2*this.c));
@@ -55,127 +57,15 @@ MyHexBoard = ig.Class.extend({
     loadImages: function() {
         this.font =  new ig.Font( 'media/04b03.font.png' );
         this.imgHover = new ig.Image('media/hexhover.png');
-        this.imgSwitch = new ig.AnimationSheet( 'media/hexRowSwitch.png', 56, 65 );
-        this.imgWall = new ig.AnimationSheet( 'media/hexRowWall.png', 56, 65 );
 
-        this.brdType.EDGE = 0;          // edge of the board.  solid. can't edit or move.
-        this.brdType.MOUNTAIN = 1;      // standard mountain.  solid,
-        this.brdType.FLOOR = 2;         // standard floor.
-        this.brdType.START = 3;         // THE one-and-only start location
-        this.brdType.FINISH = 4;        // THE one-and-only finish location
-        this.brdType.SWITCH = 5;        // on/off switch plate
-        this.brdType.WALL = 6;          // up-and-down wall
-
-        this.brdImages[this.brdType.MOUNTAIN] = new ig.Image('media/hexMtn.png');
-        this.brdImages[this.brdType.FLOOR] = new ig.Image('media/hex2.png');
+//        this.brdImages[this.hexcell.brdType.MOUNTAIN] = new ig.Image('media/hexMtn.png');
+//        this.brdImages[this.hexcell.brdType.FLOOR] = new ig.Image('media/hex2.png');
 
     },
-
-    // build/create the entire set/collection of constant board-data information
-    // like: "SWITCH w/ two animations"
-    buildTypes: function() {
-        var self = this;
-
-        var t = this.brdType;
-        this.brdData = [
-            { type: t.EDGE, id: 0, solid:true },
-            { type: t.MOUNTAIN, id: t.MOUNTAIN, solid:true },
-            { type: t.FLOOR, id: t.FLOOR },
-            { type: t.START, id: t.FLOOR },
-            { type: t.FINISH, id: t.FLOOR },
-            { type: t.SWITCH, id: t.FLOOR, down:true,
-                operate: [],    // array of hex-positions that this switch "operates"
-                build: function() {
-                    this.anim1 = new UT.Anim( self.imgSwitch, 0.03, [3,2,1,0,1,2,3,4,5,6,7,8], true, "SwitchUp" );
-                    this.anim2 = new UT.Anim( self.imgSwitch, 0.03, [8,7,6,5,4,3,2,1,0,1,2,3], true, "SwitchDown" );
-                    this.anim = this.down? this.anim2 : this.anim1;
-                    this.anim.gotoFrame(20);                      // start switch at the ending-anim (already depressed)
-                },
-                event_PlayerEntered: function() {
-                    this.down = !this.down;
-                    if (this.down) {
-                        this.anim = this.anim2;         // anim2 shows the switch down/depressed
-                    } else {
-                        this.anim = this.anim1;
-                    }
-                    this.anim.gotoFrame(0);
-                    this.anim.rewind();
-                    this.anim.start();          // fire "animation started event"
-                },
-                event_SwitchUp: function(data) {
-                    if (data.done) {
-                        self.log("Switch is now UP");
-                        self.fireCode("Operate", this, "up");
-                    }
-                },
-                event_SwitchDown: function(data) {
-                    if (data.done) {
-                        self.log("Switch is now DOWN");
-                        self.fireCode("Operate", this, "down");
-                    }
-                }
-            },
-            { type: t.WALL, id: t.FLOOR, down:true, solid:true,
-                build: function() {
-                    this.anim1 = new UT.Anim( self.imgWall, 0.15, [0,1,2,3,4,5,6,7,8,9], true, "WallUp" );
-                    this.anim2 = new UT.Anim( self.imgWall, 0.15, [9,8,7,6,5,4,3,2,1,0], true, "WallDown" );
-                    this.anim = this.down? this.anim2 : this.anim1;
-//                    this.anim.gotoFrame(20);
-                },
-                event_WallUp: function(data) {
-                    this.solid = true;                  // if wall is started up, or finished up -- solid wall
-                },
-                event_WallDown: function(data) {
-                    if (data.done) {
-                        this.solid = false;             // when wall is all the way down -- not solid
-                    }
-                },
-                doOperate_up: function() {
-                    console.log("operate UP");
-                    this.down = false;
-                    this.anim = this.down? this.anim2 : this.anim1;
-                    this.anim.rewind();
-                    this.anim.start();          // fire "animation started event"
-                },
-                doOperate_down: function() {
-                    console.log("operate DOWN");
-                    this.down = true;
-                    this.anim = this.down? this.anim2 : this.anim1;
-                    this.anim.rewind();
-                    this.anim.start();          // fire "animation started event"
-                }
-            },
-            { }
-        ];
-    },
-    // fire/run a chunk of code on a known hex-board-data
-    fireCode: function(fncName, brdData, data) {
-        var fnc = "fireCode_"+fncName;
-        console.log("fireCode.  fnc="+fnc);
-        if (this[fnc]) {
-            this[fnc](brdData, data);
-        }
-    },
-    // process all "operate" hexes (dir="up" or "down")
-    fireCode_Operate: function(brdData, dir) {
-        console.log(brdData.operate);
-        if (brdData.operate) {
-            for(var idx=0; idx<brdData.operate.length; idx++) {
-                var pos = brdData.operate[idx];
-                var op = this.getBoardDataAt(pos);      // op = 1 brdData to operate
-                var fnc = "doOperate_"+dir;
-                console.log(op);
-                if(op[fnc]) {
-                    op[fnc](brdData);
-                }
-            }
-        }
-    },
-
 
     // build/create one hex on the board
     buildOneHex: function(idx, x,y, settings) {
-        var brdData = ig.copy(this.brdData[idx]);
+        var brdData = ig.copy(this.hexcell.brdData[idx]);
         if (settings) {
             for(var key in settings) {
                 if (settings.hasOwnProperty(key)) {
@@ -201,7 +91,7 @@ MyHexBoard = ig.Class.extend({
     // build/create the entire board
     buildBoard: function() {
         var id,
-            t = this.brdType;
+            t = this.hexcell.brdType;
 
         // create an empty board
         this.brd = [];
@@ -214,10 +104,10 @@ MyHexBoard = ig.Class.extend({
         }
         // create the starting location
         // DEBUG BOARD FILL-IN:
-        this.brd[1][7] = this.buildOneHex(this.brdType.START, 1,7);
-        this.brd[2][7] = this.buildOneHex(this.brdType.SWITCH, 2,7, {down:true, operate:[{ix:4,iy:6}]});
-        this.brd[4][6] = this.buildOneHex(this.brdType.WALL, 4,6, {down:true, solid:false});
-        this.brd[4][8] = this.buildOneHex(this.brdType.WALL, 4,8, {down:false, solid:true});
+        this.brd[1][7] = this.buildOneHex(t.START, 1,7);
+        this.brd[2][7] = this.buildOneHex(t.SWITCH, 2,7, {down:true, operate:[{ix:4,iy:6}]});
+        this.brd[4][6] = this.buildOneHex(t.WALL, 4,6, {down:true, solid:false});
+        this.brd[4][8] = this.buildOneHex(t.WALL, 4,8, {down:false, solid:true});
     },
 
 	update: function() {
@@ -258,7 +148,7 @@ MyHexBoard = ig.Class.extend({
             return this.brd[pos.ix][pos.iy];
         }
         // requested something that is OFF the board ... return a known "Edge" object
-        return this.brdData[0];
+        return this.hexcell.brdData[0];
     },
 
 
@@ -404,7 +294,7 @@ MyHexBoard = ig.Class.extend({
                         }
                     }
                 }
-                img = this.brdImages[brdData.id];
+                img = this.hexcell.brdImages[brdData.id];
                 if (img) img.draw(tx,ty);
                 if (brdData.anim) {
                     brdData.anim.draw(tx,ty);
