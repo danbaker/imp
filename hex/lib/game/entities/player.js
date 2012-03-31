@@ -33,6 +33,7 @@ EntityPlayer = ig.Entity.extend({
         this.addAnim( 'fall', 0.4, [6,7] );
 
         this.hexboard = settings.hexboard;
+        this.hexboard.hexcell.setPlayerDelegate(this);
 	},
 
 
@@ -43,6 +44,19 @@ EntityPlayer = ig.Entity.extend({
         }
         this.pos.x = x;
         this.pos.y = y;
+    },
+
+    // check if the player is currently ON a board-data-hex-cell
+    isPlayerOn: function(bd) {
+        var pdb = this.hexboard.getBoardDataAt(this.hexat);
+        return pdb === bd;
+    },
+    isPlayerHeadedTo: function(bd) {
+        if (this.hexdest) {
+            var pdb = this.hexboard.getBoardDataAt(this.hexdest);
+            return pdb === bd;
+        }
+        return false;
     },
 
     update: function() {

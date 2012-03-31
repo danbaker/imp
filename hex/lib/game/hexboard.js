@@ -105,8 +105,8 @@ MyHexBoard = ig.Class.extend({
         // create the starting location
         // DEBUG BOARD FILL-IN:
         this.brd[1][7] = this.buildOneHex(t.START, 1,7);
-        this.brd[2][7] = this.buildOneHex(t.SWITCH, 2,7, {down:true, operate:[{ix:4,iy:6}]});
-        this.brd[4][6] = this.buildOneHex(t.WALL, 4,6, {down:true, solid:false});
+        this.brd[2][7] = this.buildOneHex(t.SWITCH, 2,7, {down:true, operate:[{ix:3,iy:6},{ix:4,iy:8}]});
+        this.brd[3][6] = this.buildOneHex(t.WALL, 3,6, {down:true, solid:false});
         this.brd[4][8] = this.buildOneHex(t.WALL, 4,8, {down:false, solid:true});
     },
 

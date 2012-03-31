@@ -1,4 +1,10 @@
-ig.module( 
+// EVENTS:
+//  PlayerLeaving
+//  PlayerExited
+//  PlayerEntered
+//  PlayerStanding
+
+ig.module(
 	'game.hexcell'
 )
 .requires(
@@ -14,7 +20,8 @@ HexCell = ig.Class.extend({
     brdData: [],                    // brdData[0] = the default board-data for a "0" (Mountain/Edge)
     brdImages: [],                  // array of images
     pubsub: UT.PubSub.getInstance(),
-    hexboard: null,
+    hexboard: null,                 // the board delegate object
+    player: null,                   // the player delegate object (hex cells call this to find out about the current board state)
 
 
 	
@@ -25,6 +32,10 @@ HexCell = ig.Class.extend({
             this.buildTypes();
         }
 	},
+
+    setPlayerDelegate: function(plyr) {
+        this.player = plyr;
+    },
 
     loadImages: function() {
 
@@ -101,9 +112,24 @@ HexCell = ig.Class.extend({
                         this.solid = false;             // when wall is all the way down -- not solid
                     }
                 },
+                event_PlayerLeaving: function() {
+                    console.log("***** Plaer Leaving WALL *****  doLater_up="+this.doLater_up);
+                    if (this.doLater_up) {
+                        this.doOperate_upNow();
+                    }
+                },
                 doOperate_up: function() {
-                    //console.log("operate UP");
+                    if (this.isPlayerOn()) {
+                        // Hard Case: player is ON-or-headed-to this cell.  Can't put up wall (yet)
+                        this.doLater_up = true;
+                    } else {
+                        this.doOperate_upNow();
+                    }
+                },
+                doOperate_upNow: function() {
+                    //console.log("operate UP NOW");
                     this.down = false;
+                    this.doLater_up = false;
                     this.restartAnim();
                 },
                 doOperate_down: function() {
@@ -120,6 +146,20 @@ HexCell = ig.Class.extend({
             },
             { }
         ];
+        this._prepareBrdData();
+    },
+    _prepareBrdData: function() {
+        var idx,
+            bd,
+            self = this;
+
+        for(idx=0; idx<this.brdData.length; idx++) {
+            bd = this.brdData[idx];
+            bd.isPlayerOn = function() {
+                // return false if player is NOT on (or walking into) this hex-cell
+                return (self.player.isPlayerOn(this) || self.player.isPlayerHeadedTo(this));
+            }
+        }
     },
     // fire/run a chunk of code on a known hex-board-data
     fireCode: function(fncName, brdData, data) {
