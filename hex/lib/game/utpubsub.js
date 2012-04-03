@@ -11,6 +11,7 @@ UT.PubSub = ig.Class.extend({
 init: function() {
 	// the collection of all events registered on this PubSub (key=eventID, value = object)
 	this._events = {};			// eventID: { subscriptions:..., vetoers:..., slow:true }
+    this._ALL = "*";            // special "ALL" event name
 	
 	// collection of handles and objects (key is handle, value is eventObj)
 	this._handles = {};			// eventHandle: { eventID:eventID, priority:N } --OR-- { eventID:eventID, veto:true }
@@ -259,43 +260,48 @@ this.log("checkEvent:  eventID="+eventID);
 	var idx;				// index into array
 	var oneSub;				// one subscription object
 	// 1) find event
-	evt = this._events[eventID];
-	if (evt && evt.subscribers && evt.subscribers.pri) {
-		// check VETO
-		if (evt.vetoers) {
-			arr = evt.vetoers;
-			// walk every function that asked to be checked for veto
-			for(idx=0; idx<arr.length; idx++) {
-				oneSub = arr[idx];
-				if (oneSub && oneSub.fn) {
-					// check if this one wants to veto
-					if (oneSub.fn.call(oneSub.obj, eventID, args)) {
-						// VETO'ED
-						return false;
-					}
-				}
-			}
-		}
-		min = evt.subscribers.minPri;		// minimum priority to check
-		max = evt.subscribers.maxPri;		// maximum priority to check
-		pri = evt.subscribers.pri;			// array to check based-on priority
-		for(priority=min; priority<=max; priority++) {
-			arr = pri[priority];			// array of subscribers for this one priority
-			if (arr) {
-				for(idx=0; idx<arr.length; idx++) {
-					oneSub = arr[idx];
-					if (oneSub && oneSub.fn) {
-						// event has at least 1 subscriber and no on veto'ed it
-						return true;
-					}
-				}
-			}
-		}
-	}
-	// IF slow has subscribed, return true
-	if (evt && evt.slow) {
-		return true;
-	}
+    for(var i=0; i<2; i++) {
+        switch (i) {
+            case 0:     evt = this._events[eventID];    break;
+            case 1:     evt = this._events[this._ALL];  break;
+        }
+        if (evt && evt.subscribers && evt.subscribers.pri) {
+            // check VETO
+            if (evt.vetoers) {
+                arr = evt.vetoers;
+                // walk every function that asked to be checked for veto
+                for(idx=0; idx<arr.length; idx++) {
+                    oneSub = arr[idx];
+                    if (oneSub && oneSub.fn) {
+                        // check if this one wants to veto
+                        if (oneSub.fn.call(oneSub.obj, eventID, args)) {
+                            // VETO'ED
+                            return false;
+                        }
+                    }
+                }
+            }
+            min = evt.subscribers.minPri;		// minimum priority to check
+            max = evt.subscribers.maxPri;		// maximum priority to check
+            pri = evt.subscribers.pri;			// array to check based-on priority
+            for(priority=min; priority<=max; priority++) {
+                arr = pri[priority];			// array of subscribers for this one priority
+                if (arr) {
+                    for(idx=0; idx<arr.length; idx++) {
+                        oneSub = arr[idx];
+                        if (oneSub && oneSub.fn) {
+                            // event has at least 1 subscriber and no on veto'ed it
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        // IF slow has subscribed, return true
+        if (evt && evt.slow) {
+            return true;
+        }
+    }
 	return null;
 },
 
@@ -337,32 +343,38 @@ publishNow: function(eventID, args, localOnly) {
 	var idx;				// index into array
 	var oneSub;				// one subscription-object
 	// 1) find event
-	evt = this._events[eventID];
-	if (evt) {
-		if (evt.subscribers && evt.subscribers.pri) {
-			min = evt.subscribers.minPri;		// minimum priority to check
-			max = evt.subscribers.maxPri;		// maximum priority to check
-			pri = evt.subscribers.pri;			// array of subscribers ordered by priority
-			// walk every priority
-			for(priority=min; priority<=max; priority++) {
-				arr = pri[priority];
-				if (arr) {
-					// walk every subscription in this priority
-					for(idx=0; idx<arr.length; idx++) {
-						oneSub = arr[idx];
-						if (oneSub && oneSub.fn) {
-							oneSub.fn.call(oneSub.obj, eventID, args);
-							returnN += 1;
-						}
-					}
-				}
-			}
-		}
-		if (evt.slow && this._slowFn && !localOnly) {
-			this._slowFn.call(this._slowObj, {publish:true}, eventID, args);
-			returnN += 1;
-		}
-	}
+    // 1) find event
+    for(var i=0; i<2; i++) {
+        switch (i) {
+            case 0:     evt = this._events[eventID];    break;
+            case 1:     evt = this._events[this._ALL];  break;
+        }
+        if (evt) {
+            if (evt.subscribers && evt.subscribers.pri) {
+                min = evt.subscribers.minPri;		// minimum priority to check
+                max = evt.subscribers.maxPri;		// maximum priority to check
+                pri = evt.subscribers.pri;			// array of subscribers ordered by priority
+                // walk every priority
+                for(priority=min; priority<=max; priority++) {
+                    arr = pri[priority];
+                    if (arr) {
+                        // walk every subscription in this priority
+                        for(idx=0; idx<arr.length; idx++) {
+                            oneSub = arr[idx];
+                            if (oneSub && oneSub.fn) {
+                                oneSub.fn.call(oneSub.obj, eventID, args);
+                                returnN += 1;
+                            }
+                        }
+                    }
+                }
+            }
+            if (evt.slow && this._slowFn && !localOnly) {
+                this._slowFn.call(this._slowObj, {publish:true}, eventID, args);
+                returnN += 1;
+            }
+        }
+    }
 	return returnN;
 },
 
