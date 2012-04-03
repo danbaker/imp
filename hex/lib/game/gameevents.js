@@ -40,6 +40,9 @@ GameEvents = ig.Class.extend({
             this.pubsub.subscribe("ANIM:SwitchDown", function(evt, data) {          // switch anim just finished.  Switch is now "DOWN"
                 self.brdEvent(evt, data);
             });
+            this.pubsub.subscribe("ANIM:SwitchToggle", function(evt, data) {        // switch animation just completed.  Switch was toggled
+                self.brdEvent(evt, data);
+            });
             this.pubsub.subscribe("ANIM:WallUp", function(evt, data) {            // switch animation just completed.  Switch is now "UP"
                 self.brdEvent(evt, data);
             });

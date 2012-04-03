@@ -85,6 +85,7 @@ MyHexBoard = ig.Class.extend({
                 brdData.anim2.setPos(x,y);
             }
         }
+        brdData.uid = {ix:x,iy:y,note:"This is a debug object that identifies this hex cell, based on where it started"};
         return brdData;
     },
 
@@ -105,19 +106,65 @@ MyHexBoard = ig.Class.extend({
         // create the starting location
         // DEBUG BOARD FILL-IN:
         this.brd[1][7] = this.buildOneHex(t.START, 1,7);
-        this.brd[2][7] = this.buildOneHex(t.SWITCH, 2,7, {down:true, operate:[{ix:3,iy:6}]});
-        this.brd[3][6] = this.buildOneHex(t.WALL, 3,6, {down:true, solid:false});
+        this.brd[2][7] = this.buildOneHex(t.SWITCH, 2,7, {down:false});
+        this.brd[2][6] = this.buildOneHex(t.SWITCH, 2,6, {down:false});
+        this.brd[1][5] = this.buildOneHex(t.SWITCH, 1,5, {down:true});
+        this.brd[3][6] = this.buildOneHex(t.WALL, 3,6, {down:false, solid:true});
         this.brd[4][8] = this.buildOneHex(t.WALL, 4,8, {down:false, solid:true});
         this.brd[5][7] = this.buildOneHex(t.PLATE, 5,7, {down:false, operate:[{ix:4,iy:8}]});
 
+        // DEBUG SEQUENCES FOR THIS DEBUG BOARD:
+        this.seq = [];
+        var seq = {};       // 1 sequence:
+        seq.need = [];
+            var need = {down:true, cells:[{ix:2,iy:7},{ix:2,iy:6}]};        // 2 switches DOWN
+            seq.need.push(need);
+            need = {down:false, cells:[{ix:1,iy:5}]};                       // 1 switch UP
+            seq.need.push(need);
+        seq.event = "down";                                           // push wall DOWN when ALL switches are correct
+        seq.operate = [{ix:3,iy:6}];                                        // walls to operate when ALL switch are correct
+        this.seq.push(seq);
+        seq = {};           // 1 sequence
+        seq.need = [];
+            need = {down:false, cells:[{ix:2,iy:7}]};                       // 1 switch UP
+            seq.need.push(need);
+        seq.event = "up";                                             // push wall UP if this one switch is up
+        seq.operate = [{ix:3,iy:6}];                                        // walls to operate when ALL switch are correct
+        this.seq.push(seq);
+        seq = {};           // 1 sequence
+        seq.need = [];
+            need = {down:false, cells:[{ix:2,iy:6}]};                       // 1 switch UP
+            seq.need.push(need);
+        seq.event = "up";                                             // push wall UP if this one switch is up
+        seq.operate = [{ix:3,iy:6}];                                        // walls to operate when ALL switch are correct
+        this.seq.push(seq);
+        seq = {};           // 1 sequence
+        seq.need = [];
+            need = {down:true, cells:[{ix:1,iy:5}]};                        // 1 switch DOWN
+            seq.need.push(need);
+        seq.event = "up";                                             // push wall UP if this one switch is down
+        seq.operate = [{ix:3,iy:6}];                                        // walls to operate when ALL switch are correct
+        this.seq.push(seq);
         this._fixupBoardReferences();
     },
 
     _fixupBoardReferences: function() {
+        // fixup all board cell references (from positions to actual pointers to the brdData)
         for(var x=0; x<this.brdWide; x++) {
             for(var y=0; y<this.brdHigh; y++) {
                 var bd = this.getBoardDataAt(x,y);
                 this._fixupReferencesArray(bd.operate);         // fixup "operate" array of references
+            }
+        }
+        // fixup all sequence cell references too
+        for(var idx=0; idx<this.seq.length; idx++) {
+            var seq = this.seq[idx];
+            this._fixupReferencesArray(seq.operate);            // fixup "operate" array of references
+            if (seq.need) {
+                for(var i=0; i<seq.need.length; i++) {
+                    var need = seq.need[i];
+                    this._fixupReferencesArray(need.cells);     // fixup "cells" array of references
+                }
             }
         }
     },
@@ -135,6 +182,50 @@ MyHexBoard = ig.Class.extend({
                 }
             }
         }
+    },
+
+    // check all sequences .. to see if one of them NOW is true (because the board just changed)
+    // in: brdData = the hex-cell board-data that just changed
+    checkSequences: function(brdData) {
+        // walk all sequences, looking for any that include this brdData ... if they are true, then trigger event
+        for(var idx=0; idx<this.seq.length; idx++) {
+            var seq = this.seq[idx];
+            var seqTriggered = true;        // ALL needs met.
+            var brdDataFound = false;       // "brdData" was part of this sequence needs
+            if (seq.need) {
+                for(var i=0; seqTriggered && i<seq.need.length; i++) {
+                    var need = seq.need[i];
+                    // need = {down:true, cells:[{ix:2,iy:7},{ix:2,iy:6}]};        // 2 switches DOWN
+                    if (need.cells) {
+                        for(var ic=0; seqTriggered && ic<need.cells.length; ic++) {
+                            var bd = need.cells[ic];
+                            if (bd.down !== need.down) {
+                                seqTriggered = false;                               // need was NOT met
+                            }
+                            if (bd === brdData) {
+                                brdDataFound = true;                                // brdData WAS part of this sequence needs (CAN trigger)
+                            }
+                        }
+                    }
+                }
+                if (seqTriggered && brdDataFound) {
+                    // sequence was triggered (all needs are currently met) AND brdData was included in those needs to be met
+                    // TODO: trigger event!
+                    // TODO: walk the entire "operate" list ... and fire event on each brdData
+                    console.log("SEQUENCE JUST TRIGGERED");
+                    if (seq.operate) {
+                        for(i=0; i<seq.operate.length; i++) {
+                            bd = seq.operate[i];
+                            var fnc = "doOperate_"+seq.event;           // doOperate_up
+                            if (bd[fnc]) {
+                                bd[fnc]({seq:seq});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
     },
 
 	update: function() {

@@ -76,9 +76,8 @@ HexCell = ig.Class.extend({
                     //this.anim.gotoFrame(20);                      // start switch at the ending-anim (already depressed)
                 },
                 event_PlayerEntered: function() {
-                    this.down = !this.down;
-                    if (this.down) {
-                        this.anim = this.anim2;         // anim2 shows the switch down/depressed
+                    if (!this.down) {
+                        this.anim = this.anim2;         // switch is up ... anim2 shows the switch going down
                     } else {
                         this.anim = this.anim1;
                     }
@@ -88,14 +87,14 @@ HexCell = ig.Class.extend({
                 },
                 event_SwitchUp: function(data) {
                     if (data.done) {
-                        self.log("Switch is now UP");
-                        self.fireCode("Operate", this, "up");
+                        this.down = false;                      // switch is now UP
+                        self.hexboard.checkSequences(this);
                     }
                 },
                 event_SwitchDown: function(data) {
                     if (data.done) {
-                        self.log("Switch is now DOWN");
-                        self.fireCode("Operate", this, "down");
+                        this.down = true;                       // switch it now DOWN
+                        self.hexboard.checkSequences(this);
                     }
                 }
             },
@@ -115,17 +114,19 @@ HexCell = ig.Class.extend({
                     }
                 },
                 event_PlayerLeaving: function() {
-                    console.log("***** Plaer Leaving WALL *****  doLater_up="+this.doLater_up);
+                    //console.log("***** Player Leaving WALL *****  doLater_up="+this.doLater_up);
                     if (this.doLater_up) {
                         this.doOperate_upNow();
                     }
                 },
                 doOperate_up: function() {
-                    if (this.isPlayerOn()) {
-                        // Hard Case: player is ON-or-headed-to this cell.  Can't put up wall (yet)
-                        this.doLater_up = true;
-                    } else {
-                        this.doOperate_upNow();
+                    if (this.down) {
+                        if (this.isPlayerOn()) {
+                            // Hard Case: player is ON-or-headed-to this cell.  Can't put up wall (yet)
+                            this.doLater_up = true;
+                        } else {
+                            this.doOperate_upNow();
+                        }
                     }
                 },
                 doOperate_upNow: function() {
@@ -136,14 +137,19 @@ HexCell = ig.Class.extend({
                 },
                 doOperate_down: function() {
                     //console.log("operate DOWN");
-                    this.down = true;
-                    this.restartAnim();
+                    if (!this.down) {
+                        this.down = true;
+                        this.restartAnim();
+                    }
                 },
                 restartAnim: function() {
-                    this.anim = this.down? this.anim2 : this.anim1;
-                    this.anim.gotoFrame(0);
-                    this.anim.rewind();
-                    this.anim.start();          // fire "animation started event"
+                    var a = this.down? this.anim2 : this.anim1;
+                    if (this.anim !== a) {
+                        this.anim = a;
+                        this.anim.gotoFrame(0);
+                        this.anim.rewind();
+                        this.anim.start();          // fire "animation started event"
+                    }
                 }
             },
             { type: t.PLATE, id: t.FLOOR, down:true,
@@ -155,29 +161,29 @@ HexCell = ig.Class.extend({
                     //this.anim.gotoFrame(20);                      // start switch at the ending-anim (already depressed)
                 },
                 event_PlayerEntered: function() {
-                    this.down = true;
                     this.anim = this.anim2;         // anim2 shows the switch down/depressed
                     this.anim.gotoFrame(0);
                     this.anim.rewind();
-                    this.anim.start();          // fire "animation started event"
+                    this.anim.start();              // fire "animation started event"
                 },
                 event_PlayerExited: function() {
-                    this.down = false;
                     this.anim = this.anim1;         // anim2 shows the switch down/depressed
                     this.anim.gotoFrame(0);
                     this.anim.rewind();
-                    this.anim.start();          // fire "animation started event"
+                    this.anim.start();              // fire "animation started event"
                 },
                 event_SwitchUp: function(data) {
                     if (data.done) {
-                        self.log("Switch is now UP");
-                        self.fireCode("Operate", this, "up");
+                        //self.log("SwitchUp animation is done");
+                        this.down = false;
+                        self.hexboard.checkSequences(this);
                     }
                 },
                 event_SwitchDown: function(data) {
                     if (data.done) {
-                        self.log("Switch is now DOWN");
-                        self.fireCode("Operate", this, "down");
+                        //self.log("SwitchDown animation is done");
+                        this.down = true;
+                        self.hexboard.checkSequences(this);
                     }
                 }
             },
@@ -196,28 +202,6 @@ HexCell = ig.Class.extend({
             bd.isPlayerOn = function() {
                 // return false if player is NOT on (or walking into) this hex-cell
                 return (self.player.isPlayerOn(this) || self.player.isPlayerHeadedTo(this));
-            }
-        }
-    },
-    // fire/run a chunk of code on a known hex-board-data
-    fireCode: function(fncName, brdData, data) {
-        var fnc = "fireCode_"+fncName;
-        //console.log("fireCode.  fnc="+fnc);
-        if (this[fnc]) {
-            this[fnc](brdData, data);
-        }
-    },
-    // process all "operate" hexes (dir="up" or "down")
-    fireCode_Operate: function(brdData, dir) {
-        //console.log(brdData.operate);
-        if (brdData.operate) {
-            for(var idx=0; idx<brdData.operate.length; idx++) {
-                var bd = brdData.operate[idx];      // bd = 1 brdData to operate
-                var fnc = "doOperate_"+dir;
-                if(bd[fnc]) {
-                    // run operation on another board-data
-                    bd[fnc](brdData);
-                }
             }
         }
     },

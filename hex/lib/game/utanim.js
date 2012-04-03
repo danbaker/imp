@@ -30,7 +30,6 @@ UT.Anim = ig.Animation.extend({
 
         // check if this animation just finished
         if (!this.doneEventFired && this.frame >= this.sequence.length-1) {
-            // TODO: FIRE EVENT "animation complete"
             this.doneEventFired = true;
             if (this.eventName) {
                 // publish "Animation Completed in hex(pos)"
