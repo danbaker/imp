@@ -85,7 +85,17 @@ MyHexBoard = ig.Class.extend({
                 brdData.anim2.setPos(x,y);
             }
         }
-        brdData.uid = {ix:x,iy:y,note:"This is a debug object that identifies this hex cell, based on where it started"};
+        brdData.uid = {ix:x,iy:y,note:"DEBUG-ONLY"};    // This is a debug object that identifies this hex cell, based on where it started
+        if (!brdData.rotate) brdData.rotate = 0;        // default to normal-rotation (facing right)
+        // brdData.
+        //  anim        = {} current animation running
+        //  anim1,2,... = {} animation objects (utanim)
+        //  bases       = [] [0] = lowest base, [1] = next base on top of base[0] ... like ROTATE, MOVE
+        //  down        = true means a switch is in the "down" position (false means it is up)
+        //  rotate      = direction piece is rotated (0=to the right, 1=right/up ... around like degrees)
+        //  solid       = true means player can NOT walk on
+        //  type        = MOUNTAIN,SWITCH ...
+        //  uid         = {} debug info about where this cell was created
         return brdData;
     },
 
@@ -109,8 +119,8 @@ MyHexBoard = ig.Class.extend({
         this.brd[2][7] = this.buildOneHex(t.SWITCH, 2,7, {down:false});
         this.brd[2][6] = this.buildOneHex(t.SWITCH, 2,6, {down:false});
         this.brd[1][5] = this.buildOneHex(t.SWITCH, 1,5, {down:true});
-        this.brd[3][6] = this.buildOneHex(t.WALL, 3,6, {down:false, solid:true});
-        this.brd[4][8] = this.buildOneHex(t.WALL, 4,8, {down:false, solid:true});
+        this.brd[3][6] = this.buildOneHex(t.WALL, 3,6, {down:false, solid:true, bases:[t.MOVE]});
+        this.brd[4][8] = this.buildOneHex(t.WALL, 4,8, {down:false, solid:true, rotate:2, bases:[t.ROTATE]});
         this.brd[5][7] = this.buildOneHex(t.PLATE, 5,7, {down:false, operate:[{ix:4,iy:8}]});
 
         // DEBUG SEQUENCES FOR THIS DEBUG BOARD:
@@ -385,6 +395,15 @@ MyHexBoard = ig.Class.extend({
 
     // Note: this gets called every frame
 	draw: function() {
+//        if (true) {
+//            // DEBUG CODE
+//            this.tick = false;
+//            if (!this.frameN) this.frameN = 0;
+//            this.frameN++;
+//            if (this.frameN % 30 === 0) {
+//                this.tick = true;
+//            }
+//        }
 
 		// Add your own drawing code here
 		var mx=ig.input.mouse.x,            // screen x,y of the mouse
@@ -394,12 +413,17 @@ MyHexBoard = ig.Class.extend({
             tx,ty,                          // hex top screen x,y of the hex (adjusted for odd rows)
             mouseHover,
             row = true,
+            bi,                             // base-index (index into the .base array)
             brdData,                        // board-data object
             img;
 
         for(iy=0, y=this.offset.y; y<this.brdPixelHigh; y+= this.yAdd, iy++) {
-            for(ix=0, x=this.offset.y; x<this.brdPixelWide; x+= this.xAdd, ix++) {
+            for(ix=0, x=this.offset.x; x<this.brdPixelWide; x+= this.xAdd, ix++) {
                 brdData = this.getBoardDataAt(ix,iy);
+//                if (this.tick && brdData.rotate) {
+//                    brdData.rotate++;
+//                    if (brdData.rotate > 5) brdData.rotate = 1;
+//                }
                 // get the top/left corner of this hex
                 ty = y;
                 tx = x+(row?0:this.b);
@@ -412,11 +436,23 @@ MyHexBoard = ig.Class.extend({
                         }
                     }
                 }
+                // 1) draw the main board-image for this cell
                 img = this.hexcell.brdImages[brdData.id];
                 if (img) img.draw(tx,ty);
+                // 2) draw all "bases"
+                if (brdData.bases) {
+                    for(bi=0; bi<brdData.bases.length; bi++) {
+                        var DANB = brdData.bases[bi];       // 101 or 102 ...
+                        img = this.hexcell.brdImages[brdData.bases[bi]];
+                        if (img) img.draw(tx,ty);
+                    }
+                }
+                // 3) draw animated object
                 if (brdData.anim) {
+                    brdData.anim.angle = Math.PI*2/6 * brdData.rotate;
                     brdData.anim.draw(tx,ty);
                 }
+                // 4) draw the "hover" image last
                 if (mouseHover) {
                     this.imgHover.draw(tx, ty);
                 }

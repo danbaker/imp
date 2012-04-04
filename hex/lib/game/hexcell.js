@@ -17,6 +17,7 @@ ig.module(
 HexCell = ig.Class.extend({
 	
     brdType: {},                    // enumerations of the available types (.EDGE = 0)
+    baseType: {},                   // enumerations of the possible bases {.MOVE, .ROTATE)
     brdData: [],                    // brdData[0] = the default board-data for a "0" (Mountain/Edge)
     brdImages: [],                  // array of images
     pubsub: UT.PubSub.getInstance(),
@@ -48,11 +49,20 @@ HexCell = ig.Class.extend({
         this.brdType.WALL = 6;          // up-and-down wall
         this.brdType.PLATE = 7;         // on.off plate-switch (only down if something is ON the plate)
 
+        this.brdType.MOVE = 101;
+        this.brdType.ROTATE = 102;
+
+        this.baseType.MOVE = this.brdType.MOVE;         // this brd cell can be moved(pushed) around by the player
+        this.baseType.ROTATE = this.brdType.ROTATE;     // this brd cell can be rotate by the player
+
         this.imgSwitch = new ig.AnimationSheet( 'media/hexRowSwitch.png', 56, 65 );
         this.imgWall = new ig.AnimationSheet( 'media/hexRowWall.png', 56, 65 );
         this.imgPlate = new ig.AnimationSheet( 'media/hexRowPlate.png', 56, 65 );
         this.brdImages[this.brdType.MOUNTAIN] = new ig.Image('media/hexMtn.png');
         this.brdImages[this.brdType.FLOOR] = new ig.Image('media/hex2.png');
+
+        this.brdImages[this.brdType.MOVE] = new ig.Image('media/hexMove.png');
+        this.brdImages[this.brdType.ROTATE] = new ig.Image('media/hexRotate.png');
     },
 
     // build/create the entire set/collection of constant board-data information
@@ -68,7 +78,7 @@ HexCell = ig.Class.extend({
             { type: t.START, id: t.FLOOR },
             { type: t.FINISH, id: t.FLOOR },
             { type: t.SWITCH, id: t.FLOOR, down:true,
-                operate: [],    // array of hex-positions that this switch "operates"
+//                operate: [],    // array of hex-positions that this switch "operates"
                 build: function() {
                     this.anim1 = new UT.Anim( self.imgSwitch, 0.03, [3,2,1,0,1,2,3,4,5,6,7,8], true, "SwitchUp" );
                     this.anim2 = new UT.Anim( self.imgSwitch, 0.03, [8,7,6,5,4,3,2,1,0,1,2,3], true, "SwitchDown" );
@@ -153,7 +163,7 @@ HexCell = ig.Class.extend({
                 }
             },
             { type: t.PLATE, id: t.FLOOR, down:true,
-                operate: [],    // array of hex-positions that this switch "operates"
+//                operate: [],    // array of hex-positions that this switch "operates"
                 build: function() {
                     this.anim1 = new UT.Anim( self.imgPlate, 0.03, [0,1,2,3,4], true, "SwitchUp" );
                     this.anim2 = new UT.Anim( self.imgPlate, 0.03, [4,3,2,1,0], true, "SwitchDown" );
