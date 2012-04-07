@@ -48,22 +48,64 @@ MyGame = ig.Game.extend({
         ig.input.bind( ig.KEY.Z, 'dir6' );
         this.gameevents = GameEvents.getInstance();
         this.gameevents.init(this.hexboard, this.player);
+
+        this.UIimages = [];
+        this.UIimages[0] = new ig.Image('media/hexCircle.png');
+        this.UIimages[1] = new ig.Image('media/hexCircleOutside.png');
+
     },
 	
 	update: function() {
         var mx,my,
-            pos;
+            pos,
+            bd,
+            idx,
+            bas,
+            t,
+            pMoves = [];
 		// Update all entities and backgroundMaps
 		this.parent();
 
         // check and handle for user input
         if( ig.input.pressed('leftClick') ) {
-            mx=ig.input.mouse.x;            // screen x,y of the mouse
-            my=ig.input.mouse.y;
-            pos = this.hexboard.findHexAt(mx,my);
-            if (pos) {
-                if (this.hexboard.isNext(pos, this.player.hexat)) {
-                    this.player.moveToHex(pos);
+            if (this.uiMoves) {
+                this.handleUIClick();
+            } else {
+                mx=ig.input.mouse.x;            // screen x,y of the mouse
+                my=ig.input.mouse.y;
+                pos = this.hexboard.findHexAt(mx,my);
+                if (pos) {
+                    // make sure clicked-on hex is "next-to" the player
+                    if (this.hexboard.isNext(pos, this.player.hexat)) {
+                        bd = this.hexboard.getBoardDataAt(pos);
+                        if (bd && bd.bases && bd.bases.length) {
+                            t = this.hexboard.hexcell.baseType;
+                            pMoves.push({action:"move_move", label:"Move"});                      // player MOVE into cell
+                            for(idx=0; idx<bd.bases.length; idx++) {
+                                bas = bd.bases[idx];                                // t.MOVE or t.ROTATE
+                                switch (bas) {
+                                    case t.MOVE:
+                                        pMoves.push({action:"move_push", label:"Push"});          // player PUSH cell
+                                        break;
+                                    case t.ROTATE:
+                                        pMoves.push({action:"move_rotateCW", label:"Right"});       // rotate cell clockwise
+                                        pMoves.push({action:"move_rotateCCW", label: "Left"});      // rotate cell counter-clockwise
+                                        break;
+                                }
+                            }
+                            // @TODO: remove actions from the array that can't be done (i.e. can't push into a solid cell ...)
+                            // TODO: create UI that will paint and mouse-clicks will interact with
+                            this.uiMoves = pMoves;
+                            this.hexboard.calcHexTop(pos);                  // pos.tx,pos.ty
+                            pos.tx += this.hexboard.xAdd/2;                 // alter pixel position to be top/center
+                            this.uiPos = pos;
+                            console.log(this.uiMoves);
+                        } else {
+                            // just move the player to the cell clicked on
+                            this.uiMoves = undefined;
+                            this.player.moveToHex(pos);
+                        }
+                    }
                 }
             }
         }
@@ -98,18 +140,63 @@ MyGame = ig.Game.extend({
         this.hexboard.draw();
         this.player.draw();
 
+        this.drawUI();
 
-		// Add your own drawing code here
-//		var x = ig.system.width/2,
-//			y = ig.system.height/2;
-//        --this.ticker;
-//        if (this.ticker < -10) this.ticker = 10;
-//        if (this.ticker > 0) {
-//    		this.font.draw( 'Hello world!', x, y, ig.Font.ALIGN.CENTER );
-//        }
         this.font.draw( 'FPS:'+this.fps_n, 20, 750 );
         this.font.draw( ''+this.fps_n, 0, 370 );
 	},
+
+    drawUI: function() {
+        this.hexboard.uiShowing = false;
+        if (this.uiMoves && this.uiPos) {
+            this.hexboard.uiShowing = true;
+            var mx=ig.input.mouse.x,                    // screen x,y of the mouse
+                my=ig.input.mouse.y,
+                i,
+                img = this.UIimages[0],
+                imgRing = this.UIimages[1],
+                imgWidth = img.width,
+                imgWidthX = imgWidth + 5,
+                imgHeight = img.height,
+                mov,
+                dx = -(imgWidthX * (this.uiMoves.length-1) + imgWidth) / 2,
+                dy = -60,
+                xx,
+                yy,
+                dist;
+
+            for(i=0; i<this.uiMoves.length; i++) {
+                mov = this.uiMoves[i];
+                mov.tx = this.uiPos.tx+dx;              // top.left (x,y)
+                mov.ty = this.uiPos.ty+dy;
+                mov.cx = mov.tx + imgWidth/2;           // center (x,y)
+                mov.cy = mov.ty + imgHeight/2;
+                img.draw(mov.tx, mov.ty);
+                this.font.draw(mov.label, mov.cx, mov.cy-this.font.height/2, ig.Font.ALIGN.CENTER);
+                xx = (mx - mov.cx);
+                yy = (my - mov.cy);
+                dist = (xx*xx + yy*yy);                 // distance-squared mouse is from center of this "move action"
+                mov.selected = false;
+                if (dist < (imgWidth/2)*(imgWidth/2)) {
+                    mov.selected = true;                    // mouse is hovering over this UI element
+                    imgRing.draw(mov.tx, mov.ty);           // draw a special "ring" around this UI element
+                }
+
+                dx += imgWidthX;
+            }
+        }
+    },
+    handleUIClick: function() {
+        var i,
+            mov;
+        for(i=0; i<this.uiMoves.length; i++) {
+            mov = this.uiMoves[i];
+            if (mov.selected) {
+                console.log("User Clicked on element: "+mov.action);
+            }
+        }
+        this.uiMoves = null;
+    },
 
     tryMoveDir: function(dir) {
         console.log("Move direction: "+dir);

@@ -28,6 +28,7 @@ MyHexBoard = ig.Class.extend({
 //    brdImages: [],                  // array of images
     hexcell: null,                  // THE set of possible hex cells and their code
     pubsub: UT.PubSub.getInstance(),
+    uiShowing: false,               // true means: UserInterface is showing on top of the hexboard, ignore mouse for now
 
 
 	
@@ -417,6 +418,10 @@ MyHexBoard = ig.Class.extend({
             brdData,                        // board-data object
             img;
 
+        if (this.uiShowing) {
+            mx = my = -12345;
+        }
+
         for(iy=0, y=this.offset.y; y<this.brdPixelHigh; y+= this.yAdd, iy++) {
             for(ix=0, x=this.offset.x; x<this.brdPixelWide; x+= this.xAdd, ix++) {
                 brdData = this.getBoardDataAt(ix,iy);
@@ -442,7 +447,6 @@ MyHexBoard = ig.Class.extend({
                 // 2) draw all "bases"
                 if (brdData.bases) {
                     for(bi=0; bi<brdData.bases.length; bi++) {
-                        var DANB = brdData.bases[bi];       // 101 or 102 ...
                         img = this.hexcell.brdImages[brdData.bases[bi]];
                         if (img) img.draw(tx,ty);
                     }
