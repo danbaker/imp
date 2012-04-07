@@ -40,12 +40,12 @@ MyGame = ig.Game.extend({
         ig.input.bind( ig.KEY.MOUSE1, 'leftClick' );
         ig.input.bind( ig.KEY.LEFT_ARROW, 'left' );
         ig.input.bind( ig.KEY.RIGHT_ARROW, 'right' );
-        ig.input.bind( ig.KEY.A, 'dir1' );
+        ig.input.bind( ig.KEY.D, 'dir0' );
+        ig.input.bind( ig.KEY.E, 'dir1' );
         ig.input.bind( ig.KEY.W, 'dir2' );
-        ig.input.bind( ig.KEY.E, 'dir3' );
-        ig.input.bind( ig.KEY.D, 'dir4' );
+        ig.input.bind( ig.KEY.A, 'dir3' );
+        ig.input.bind( ig.KEY.Z, 'dir4' );
         ig.input.bind( ig.KEY.X, 'dir5' );
-        ig.input.bind( ig.KEY.Z, 'dir6' );
         this.gameevents = GameEvents.getInstance();
         this.gameevents.init(this.hexboard, this.player);
 
@@ -94,7 +94,8 @@ MyGame = ig.Game.extend({
                                 }
                             }
                             // @TODO: remove actions from the array that can't be done (i.e. can't push into a solid cell ...)
-                            // TODO: create UI that will paint and mouse-clicks will interact with
+                            // @TODO: order the actions in a known order (move, push ,rotate)
+                            // @TODO: remove duplicate actions (two push actions)
                             this.uiMoves = pMoves;
                             this.hexboard.calcHexTop(pos);                  // pos.tx,pos.ty
                             pos.tx += this.hexboard.xAdd/2;                 // alter pixel position to be top/center
@@ -110,12 +111,12 @@ MyGame = ig.Game.extend({
             }
         }
         // check for keyboard request to move in a given direction
+        if (ig.input.pressed('dir0')) this.tryMoveDir(0);
         if (ig.input.pressed('dir1')) this.tryMoveDir(1);
         if (ig.input.pressed('dir2')) this.tryMoveDir(2);
         if (ig.input.pressed('dir3')) this.tryMoveDir(3);
         if (ig.input.pressed('dir4')) this.tryMoveDir(4);
         if (ig.input.pressed('dir5')) this.tryMoveDir(5);
-        if (ig.input.pressed('dir6')) this.tryMoveDir(6);
 
 		// Add your own, additional update code here
         this.hexboard.update();
@@ -193,9 +194,24 @@ MyGame = ig.Game.extend({
             mov = this.uiMoves[i];
             if (mov.selected) {
                 console.log("User Clicked on element: "+mov.action);
+                this.performUIAction(mov.action, mov);
             }
         }
         this.uiMoves = null;
+    },
+    performUIAction: function(action, mov) {
+        switch(action) {
+            case "move_move":
+                this.player.moveToHex(this.uiPos);
+                break;
+            case "move_push":
+                this.player.pushToHex(this.uiPos);
+                break;
+            case "move_rotateCW":
+                break;
+            case "move_rotateCCW":
+                break;
+        }
     },
 
     tryMoveDir: function(dir) {

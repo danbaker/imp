@@ -90,8 +90,17 @@ EntityPlayer = ig.Entity.extend({
         this.parent();
     },
 
+    // player wants to try to push the content from hex-at-pos (from current hex)
+    pushToHex: function(pos) {
+        var dir = this.hexboard.calcDir(this.hexat, pos);
+        if (dir !== undefined) {
+            if (this.hexboard.pushHexDir(pos, dir)) {
+                this.moveToHex(pos, undefined, true);
+            }
+        }
+    },
     // select a hex to move this player to
-    moveToHex: function(pos,iy) {
+    moveToHex: function(pos,iy, force) {
         var dx,dy,
             brdData,
             mult = 2;
@@ -104,7 +113,7 @@ EntityPlayer = ig.Entity.extend({
             this.hexboard.calcHexCenter(pos);           // cx,cy
             // Check if valid to move to hex
             brdData = this.hexboard.getBoardDataAt(pos);
-            if (!brdData.solid) {
+            if (!brdData.solid || force) {
                 this.hexdest = pos;                         // {ix,iy, tx,ty, cx,cy}
                 this.accel.x = 0;
                 this.accel.y = 0;

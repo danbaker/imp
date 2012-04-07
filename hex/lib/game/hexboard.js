@@ -74,6 +74,7 @@ MyHexBoard = ig.Class.extend({
                 }
             }
         }
+        if (!brdData.bases) brdData.bases = [];
         if (brdData.build) {
             brdData.build();
         }
@@ -120,9 +121,11 @@ MyHexBoard = ig.Class.extend({
         this.brd[2][7] = this.buildOneHex(t.SWITCH, 2,7, {down:false});
         this.brd[2][6] = this.buildOneHex(t.SWITCH, 2,6, {down:false});
         this.brd[1][5] = this.buildOneHex(t.SWITCH, 1,5, {down:true});
-        this.brd[3][6] = this.buildOneHex(t.WALL, 3,6, {down:false, solid:true, bases:[t.MOVE]});
+        this.brd[3][6] = this.buildOneHex(t.WALL, 3,6, {down:false, solid:true, bases:[t.MOVE, t.ROTATE]});
         this.brd[4][8] = this.buildOneHex(t.WALL, 4,8, {down:false, solid:true, rotate:2, bases:[t.ROTATE]});
         this.brd[5][7] = this.buildOneHex(t.PLATE, 5,7, {down:false, operate:[{ix:4,iy:8}]});
+        this.brd[3][7] = this.buildOneHex(t.FLOOR, 3,7, {bases:[t.ROTATE]});
+        this.brd[2][5] = this.buildOneHex(t.FLOOR, 2,5);
 
         // DEBUG SEQUENCES FOR THIS DEBUG BOARD:
         this.seq = [];
@@ -327,7 +330,7 @@ MyHexBoard = ig.Class.extend({
     isNext: function(pos1, pos2) {
         var dir,
             pos;
-        for(dir=1; dir<=6; dir++) {
+        for(dir=0; dir<=5; dir++) {
             pos = { ix:pos1.ix, iy:pos1.iy };
             this.moveDir(pos, dir);
             if (pos.ix === pos2.ix && pos.iy === pos2.iy) {
@@ -338,21 +341,36 @@ MyHexBoard = ig.Class.extend({
     },
 
     // move a position in a direction
-    // direction:           2   3
-    //                    1   x   4
-    //                      6   5
+    // direction:           2   1
+    //                    3   x   0
+    //                      4   5
     moveDir: function(pos, dir) {
         var odd = pos.iy % 2;           // false means top(fist) row
         switch (dir) {
-            case 1: pos.ix--; break;
+            case 0: pos.ix++; break;
+            case 1: pos.iy--; if (odd) pos.ix++;    break;
             case 2: pos.iy--; if (!odd) pos.ix--;   break;
-            case 3: pos.iy--; if (odd) pos.ix++;    break;
-            case 4: pos.ix++; break;
+            case 3: pos.ix--; break;
+            case 4: pos.iy++; if (!odd) pos.ix--;   break;
             case 5: pos.iy++; if (odd) pos.ix++;    break;
-            case 6: pos.iy++; if (!odd) pos.ix--;   break;
         }
         return pos;
     },
+    // calculate the direction from posFrom to posTo
+    calcDir: function(posFrom, posTo) {
+        var pos;
+        for(var dir=0; dir<6; dir++) {
+            pos = ig.copy(posFrom);
+            this.moveDir(pos, dir);
+            if (pos.ix === posTo.ix && pos.iy === posTo.iy) {
+                // FOUND DIRECTION
+                return dir;
+            }
+        }
+        return undefined;
+    },
+
+
 
     // try to find a hex, given a mouse/screen position
     // in: (mx,my) = the mouse/screen position
@@ -392,6 +410,68 @@ MyHexBoard = ig.Class.extend({
             d = (dx*dx + dy*dy),
             w = (this.b);
         return d < w*w;
+    },
+
+    // push the hex at (pos) in direction(dir)
+    // return false if can't
+    pushHexDir: function(posFrom, dir) {
+        var posTo = ig.copy(posFrom),               // posTo = cell want to move content from "posFrom" into
+            bdFrom = this.getBoardDataAt(posFrom),  // bdFrom = data moving
+            bdTo,                                   // bdTo   = data moving on top of (must be floor)
+            i,
+            base;
+        this.moveDir(posTo, dir);
+        bdTo = this.getBoardDataAt(posTo);
+        if (bdTo.type === this.hexcell.brdType.FLOOR) {         // MUST be moving onto FLOOR
+            if (!bdTo.cellMovingIn) {                           // MUST be NO cell already moving into this cell
+                if (bdFrom.bases) {
+                    for(i=0; i<bdFrom.bases.length; i++) {
+                        base = bdFrom.bases[i];
+                        if (base === this.hexcell.baseType.MOVE) {  // MUST be moving FROM a cell that has a MOVE-base
+                            return this._doPushHex(posFrom, bdFrom, posTo, bdTo, dir);
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    },
+    // start the pushing of a cell from one cell to another
+    // in:  posFrom     = cell-position of the cell to PUSH
+    //      bdFrom      = actual board-data to PUSH
+    //      posTo       = cell-position of the cell to push INTO
+    //      bdTo        = actial board-data to REPLACE
+    //      dir         = direction pushing cell in (0..5)
+    // return true IF push started
+    _doPushHex: function(posFrom, bdFrom, posTo, bdTo, dir) {
+        var basesDest = [],             // new bases for the destination cell
+            basesSrc = [],              // new bases for the source cell
+            i,
+            base,
+            copyToDest;
+        // TODO: set up an animation so the hex "moves" from "posFrom" to "posTo"
+        // TODO: leave all base's that are below the MOVE base (put them in the bdTo, remove them from bdFrom)
+        this.brd[posTo.ix][posTo.iy] = bdFrom;
+        this.brd[posFrom.ix][posFrom.iy] = bdTo;
+        for(i=0; i<bdTo.bases.length; i++) {
+            base = bdTo.bases[i];
+            if (base !== this.hexcell.baseType.MOVE) {
+                basesDest.push(base);
+            }
+        }
+        copyToDest = false;
+        for(i=0; i<bdFrom.bases.length; i++) {
+            base = bdFrom.bases[i];
+            if (base === this.hexcell.baseType.MOVE || copyToDest) {
+                basesDest.push(base);
+                copyToDest = true;
+            } else {
+                basesSrc.push(base);
+            }
+        }
+        bdFrom.bases = basesDest;           // new bases for the "from board-data that moved to a new destination"
+        bdTo.bases = basesSrc;              // new bases for the "board-data that was moved from" (any base below the MOVE base)
+        return true;
     },
 
     // Note: this gets called every frame
