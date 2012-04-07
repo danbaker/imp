@@ -95,7 +95,7 @@ MyGame = ig.Game.extend({
                             }
                             // @TODO: remove actions from the array that can't be done (i.e. can't push into a solid cell ...)
                             // @TODO: order the actions in a known order (move, push ,rotate)
-                            // @TODO: remove duplicate actions (two push actions)
+                            // @TODO:  remove duplicate actions (two push actions)
                             this.uiMoves = pMoves;
                             this.hexboard.calcHexTop(pos);                  // pos.tx,pos.ty
                             pos.tx += this.hexboard.xAdd/2;                 // alter pixel position to be top/center
