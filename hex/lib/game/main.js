@@ -1,6 +1,14 @@
 
 UT = {};
 
+if (false) {
+    UT.FPS = 1;
+    UT.DEBUG = true;
+} else {
+    UT.FPS = 60;
+    UT.DEBUG = false;
+}
+
 ig.module(
 	'game.main' 
 )
@@ -32,6 +40,7 @@ MyGame = ig.Game.extend({
 	init: function() {
 		// Initialize your game here; bind keys etc.
         var pos;
+        UT.THEgame = this;
         this.hexboard = new MyHexBoard();
         pos = this.hexboard.calcHexTop(1,7);
         pos = this.hexboard.calcHexCenter(pos);
@@ -138,6 +147,9 @@ MyGame = ig.Game.extend({
 
 		// Draw all entities and backgroundMaps
 		this.parent();
+        if (UT.DEBUG) {
+            return;
+        }
         this.hexboard.draw();
         this.player.draw();
 
@@ -234,13 +246,90 @@ MyGame = ig.Game.extend({
             return Math.random();
         }
         return Math.floor(Math.random() * max);
-    }
+    },
 
+    tryAjax: function() {
+        console.log("Testing...");
+        var url = "rest/board/102";            // GET board#1234
+        $.getJSON(url, function(data) {
+            // data = JSON for board#101
+            console.log(data);
+        });
+//        $.ajax({
+//            type: "GET",
+//            url: url,
+//            async: true,
+//            beforeSend: function(x) {
+//                if(x && x.overrideMimeType) {
+//                    x.overrideMimeType("application/j-son;charset=UTF-8");
+//                }
+//            },
+//            dataType: "json",
+//            success: function(data){
+//                console.log(data);
+//            }
+//        });
+        $.post('rest/board', {a:1, b:2, c:"Hello"},
+            function(data){
+                // data POSTed
+                var boardN = parseInt(data, 10);      // newly created board
+                console.log(boardN);
+            }, 'json');
+        $.post('rest/board/102', {a:1, b:2, c:"Hello 102"},
+            function(data){
+                console.log("102 changed");
+            }, 'json');
+    },
+
+    saveBoard: function(boardN) {
+        console.log("SAVE OVER board#"+boardN);
+        var url = 'rest/board/' + boardN;
+        var json = this.hexboard.getJSON();
+        $.post(url, json,
+            function(data){
+                // @TODO: check if "data" indicates the save finished OK ... or FAILED
+                console.log("...done saving");
+            }, 'json');
+    },
+    loadBoard: function(boardN) {
+        console.log("LOAD board#"+boardN);
+        var url = 'rest/board/' + boardN;
+        $.getJSON(url, function(data) {
+            this.hexboard.setJSON(data);
+        });
+    },
+    doUserEvent: function(evt, boardN) {
+        switch(evt) {
+            case "load":
+                this.loadBoard(boardN);
+                break;
+            case "save":
+                this.saveBoard(boardN);
+                break;
+        }
+    },
+
+    zLastItem: 0
 });
 
 
-// Start the Game with 60fps, a resolution of 320x240, scaled
-// up by a factor of 2
-ig.main( '#canvas', MyGame, 60, 1024, 768, 1 );
+// Start the Game with 60fps, a resolution of 1024x768, scaled up by a factor of 1
+ig.main( '#canvas', MyGame, UT.FPS, 1024, 768, 1 );
+
+UT.onClick = function(evt, id) {
+    var el = document.getElementById(id);
+    var boardN = parseInt(el.value, 10);
+    if (boardN) {
+        UT.THEgame.doUserEvent(evt, boardN);
+    }
+};
+
+// DEBUG DEBUG DEBUG
+if (UT.DEBUG) {
+    setTimeout(function() {
+        UT.THEgame.tryAjax();
+    }, 500);
+}
+
 
 });

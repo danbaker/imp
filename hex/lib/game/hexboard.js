@@ -64,6 +64,52 @@ MyHexBoard = ig.Class.extend({
 
     },
 
+    // generate and return JSON describing the current board situation
+    // ???? TODO: Should this return the "original" board ... NOT user-altered
+    getJSON: function() {
+        var json = { },
+            x,y,
+            bd,             // current board-data
+            d,              // data to send
+            seq,            // current sequence
+            s,              // data to send
+            i,
+            need,
+            n;
+
+        json.brd = [];
+        for(x=0; x<this.brdWide; x++) {
+            json.brd[x] = [];
+            for(y=0; y<this.brdHigh; y++) {
+                bd = this.brd[x][y];                // bd= { bases, down, rotate, type }
+                d = { bases:bd.bases, down:bd.down, rotate:bd.rotate, type:bd.type };
+                json.brd[x][y] = d;
+            }
+        }
+        json.seq = [];
+        for(x=0; x<this.seq.length; x++) {
+            seq = this.seq[x];                  // seq = {  }
+            s = { need:[] };
+            if (seq.need) {
+                for(i=0; i<seq.need.length; i++) {
+                    need = seq.need[i];
+                    // need = {down:true, cells:[{ix:2,iy:7},{ix:2,iy:6}]};        // 2 switches DOWN
+                    n = { down:need.down };
+                    if (need.cells) {
+                        n.cells = [];
+                        for(var ic=0; ic<need.cells.length; ic++) {
+                            var qqq = need.cells[ic];
+                            n.cells[ic] = {ix:qqq.uid.ix, iy:qqq.uid.iy};
+                        }
+                    }
+                    s.need[i] = n;
+                }
+            }
+            json.seq[x] = s;
+        }
+        return json;
+    },
+
     // build/create one hex on the board
     buildOneHex: function(idx, x,y, settings) {
         var brdData = ig.copy(this.hexcell.brdData[idx]);
@@ -87,7 +133,7 @@ MyHexBoard = ig.Class.extend({
                 brdData.anim2.setPos(x,y);
             }
         }
-        brdData.uid = {ix:x,iy:y,note:"DEBUG-ONLY"};    // This is a debug object that identifies this hex cell, based on where it started
+        brdData.uid = {ix:x,iy:y};                      // this describes the ORIGINAL location, it is NOT keep up-to-date
         if (!brdData.rotate) brdData.rotate = 0;        // default to normal-rotation (facing right)
         // brdData.
         //  anim        = {} current animation running

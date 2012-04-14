@@ -23,10 +23,14 @@
 		}
 	</style>
 
+    <script type="text/javascript" src="/libs/jquery.js"></script>
 	<script type="text/javascript" src="lib/impact/impact.js"></script>
 	<script type="text/javascript" src="lib/game/main.js"></script>
 </head>
 <body>
 	<canvas id="canvas"></canvas>
+    <input type="text" id="inputNumber" size=3 value="1"><br>
+    <button type="button" onclick="UT.onClick('load', 'inputNumber');">Load</button><br>
+    <button type="button" onclick="UT.onClick('save', 'inputNumber');">Save</button><br>
 </body>
 </html>
