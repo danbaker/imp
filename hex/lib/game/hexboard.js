@@ -23,9 +23,6 @@ MyHexBoard = ig.Class.extend({
     brdPixelWide: 0,                // board size in pixels
     brdPixelHigh: 0,
     brd: [],                        // brd[x][y] = {} = what is at this cell on the board (lots of data)
-//    brdType: {},                    // enumerations of the available types (.EDGE = 0)
-//    brdData: [],                    // brdData[0] = the default board-data for a "0" (Mountain/Edge)
-//    brdImages: [],                  // array of images
     hexcell: null,                  // THE set of possible hex cells and their code
     pubsub: UT.PubSub.getInstance(),
     uiShowing: false,               // true means: UserInterface is showing on top of the hexboard, ignore mouse for now
@@ -58,10 +55,6 @@ MyHexBoard = ig.Class.extend({
     loadImages: function() {
         this.font =  new ig.Font( 'media/04b03.font.png' );
         this.imgHover = new ig.Image('media/hexhover.png');
-
-//        this.brdImages[this.hexcell.brdType.MOUNTAIN] = new ig.Image('media/hexMtn.png');
-//        this.brdImages[this.hexcell.brdType.FLOOR] = new ig.Image('media/hex2.png');
-
     },
 
     // generate and return JSON describing the current board situation
@@ -105,13 +98,82 @@ MyHexBoard = ig.Class.extend({
                     s.need[i] = n;
                 }
             }
+            s.event = seq.event;
+            if (seq.operate) {
+                s.operate = [];
+                for(i=0; i<seq.operate.length; i++) {
+                    qqq = seq.operate[i];
+                    s.operate[i] = {ix:qqq.uid.ix, iy:qqq.uid.iy};
+                }
+            }
             json.seq[x] = s;
         }
         return json;
     },
+    // set the board from a json object
+    setJSON: function(json) {
+        var x,y,
+            t = this.hexcell.brdType,
+            bd,
+            i,
+            seq,
+            need,
+            ic,
+            zLastItem;
+        this.brd = [];
+        if (json.brd) {
+            for(x=0; x<json.brd.length; x++) {
+                this.brd[x] = [];
+                for(y=0; y<json.brd[x].length; y++) {
+                    bd = json.brd[x][y];
+                    // convert strings into numbers
+                    bd.type = parseInt(bd.type, 10);
+                    bd.down = (bd.down == "true"? true : false);
+                    bd.rotate = parseInt(bd.rotate, 10);
+                    if (bd.bases) {
+                        for(i=0; i<bd.bases.length; i++) {
+                            bd.bases[i] = parseInt(bd.bases[i],10);
+                        }
+                    }
+                    if (bd.operate) {
+                        for(i=0; i<bd.operate.length; i++) {
+                            bd.operate[i].ix = parseInt(bd.operate[i].ix, 10);
+                            bd.operate[i].iy = parseInt(bd.operate[i].iy, 10);
+                        }
+                    }
+                    this.brd[x][y] = this.buildOneHex(bd.type, x,y, bd);
+                }
+            }
+        }
+        this.seq = [];
+        if (json.seq) {
+            this.seq = json.seq;
+            for(x=0; x<json.seq.length; x++) {
+                seq = json.seq[x];
+                if (seq.need) {
+                    for(i=0; i<seq.need.length; i++) {
+                        need = seq.need[i];
+                        // need = {down:true, cells:[{ix:2,iy:7},{ix:2,iy:6}]};        // 2 switches DOWN
+                        need.down = (need.down == "true"? true:false);
+                        if (need.cells) {
+                            for(ic=0; ic<need.cells.length; ic++) {
+                                var qqq = need.cells[ic];
+                                qqq.ix = parseInt(qqq.ix, 10);
+                                qqq.iy = parseInt(qqq.iy, 10);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        this._fixupBoardReferences();
+    },
 
     // build/create one hex on the board
     buildOneHex: function(idx, x,y, settings) {
+        if (idx === undefined && settings && settings.type) {
+            idx = settings.type;
+        }
         var brdData = ig.copy(this.hexcell.brdData[idx]);
         if (settings) {
             for(var key in settings) {

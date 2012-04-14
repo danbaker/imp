@@ -287,24 +287,40 @@ MyGame = ig.Game.extend({
         var json = this.hexboard.getJSON();
         $.post(url, json,
             function(data){
-                // @TODO: check if "data" indicates the save finished OK ... or FAILED
                 console.log("...done saving");
             }, 'json');
     },
     loadBoard: function(boardN) {
+        var self = this;
         console.log("LOAD board#"+boardN);
         var url = 'rest/board/' + boardN;
         $.getJSON(url, function(data) {
-            this.hexboard.setJSON(data);
+            self.hexboard.setJSON(data);
         });
     },
-    doUserEvent: function(evt, boardN) {
+    createBoard: function(el) {
+        var url = 'rest/board';
+        var json = this.hexboard.getJSON();
+        $.post(url, json,
+            function(data){
+                // @TODO: check if "data" indicates the save finished OK ... or FAILED
+                var id = parseInt(data);
+                if (id) {
+                    el.value = id;
+                    console.log("...created board #"+id);
+                }
+            }, 'json');
+    },
+    doUserEvent: function(evt, boardN, el) {
         switch(evt) {
             case "load":
                 this.loadBoard(boardN);
                 break;
             case "save":
                 this.saveBoard(boardN);
+                break;
+            case "create":
+                this.createBoard(el);
                 break;
         }
     },
@@ -319,9 +335,7 @@ ig.main( '#canvas', MyGame, UT.FPS, 1024, 768, 1 );
 UT.onClick = function(evt, id) {
     var el = document.getElementById(id);
     var boardN = parseInt(el.value, 10);
-    if (boardN) {
-        UT.THEgame.doUserEvent(evt, boardN);
-    }
+    UT.THEgame.doUserEvent(evt, boardN, el);
 };
 
 // DEBUG DEBUG DEBUG
