@@ -78,12 +78,11 @@ HexCell = ig.Class.extend({
             { type: t.START, id: t.FLOOR },
             { type: t.FINISH, id: t.FLOOR },
             { type: t.SWITCH, id: t.FLOOR, down:true,
-//                operate: [],    // array of hex-positions that this switch "operates"
                 build: function() {
                     this.anim1 = new UT.Anim( self.imgSwitch, 0.03, [3,2,1,0,1,2,3,4,5,6,7,8], true, "SwitchUp" );
                     this.anim2 = new UT.Anim( self.imgSwitch, 0.03, [8,7,6,5,4,3,2,1,0,1,2,3], true, "SwitchDown" );
                     this.anim = this.down? this.anim2 : this.anim1;
-                    //this.anim.gotoFrame(20);                      // start switch at the ending-anim (already depressed)
+                    this.anim.gotoFrame(20);                      // start switch at the ending-anim (already depressed)
                 },
                 event_PlayerEntered: function() {
                     if (!this.down) {
@@ -113,7 +112,7 @@ HexCell = ig.Class.extend({
                     this.anim1 = new UT.Anim( self.imgWall, 0.15, [0,1,2,3,4,5,6,7,8,9], true, "WallUp" );
                     this.anim2 = new UT.Anim( self.imgWall, 0.15, [9,8,7,6,5,4,3,2,1,0], true, "WallDown" );
                     this.anim = this.down? this.anim2 : this.anim1;
-                    //this.anim.gotoFrame(20);
+                    this.anim.gotoFrame(20);
                 },
                 event_WallUp: function(data) {
                     this.solid = true;                  // if wall is started up, or finished up -- solid wall
@@ -130,6 +129,7 @@ HexCell = ig.Class.extend({
                     }
                 },
                 doOperate_up: function() {
+                    console.log("...doOperate_up  down="+this.down);
                     if (this.down) {
                         if (this.isPlayerOn()) {
                             // Hard Case: player is ON-or-headed-to this cell.  Can't put up wall (yet)
@@ -146,7 +146,7 @@ HexCell = ig.Class.extend({
                     this.restartAnim();
                 },
                 doOperate_down: function() {
-                    //console.log("operate DOWN");
+                    console.log("...doOperate_up  down="+this.down);
                     if (!this.down) {
                         this.down = true;
                         this.restartAnim();
@@ -163,7 +163,6 @@ HexCell = ig.Class.extend({
                 }
             },
             { type: t.PLATE, id: t.FLOOR, down:true,
-//                operate: [],    // array of hex-positions that this switch "operates"
                 build: function() {
                     this.anim1 = new UT.Anim( self.imgPlate, 0.03, [0,1,2,3,4], true, "SwitchUp" );
                     this.anim2 = new UT.Anim( self.imgPlate, 0.03, [4,3,2,1,0], true, "SwitchDown" );

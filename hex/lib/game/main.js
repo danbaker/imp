@@ -31,6 +31,8 @@ MyGame = ig.Game.extend({
     hexboard: null,
     player: null,
     gameevents: null,
+    editMode: false,            // true means: "end-user is editing the board" (NOT playing the game)
+    savedBoard: null,           // the board before user started playing it
 
     // Frames-Per-Second data
     fps_ts: 0,          // timestamp when starting counting frames
@@ -39,7 +41,8 @@ MyGame = ig.Game.extend({
 	
 	init: function() {
 		// Initialize your game here; bind keys etc.
-        var pos;
+        var pos,
+            self = this;
         UT.THEgame = this;
         this.hexboard = new MyHexBoard();
         pos = this.hexboard.calcHexTop(1,7);
@@ -62,6 +65,10 @@ MyGame = ig.Game.extend({
         this.UIimages[0] = new ig.Image('media/hexCircle.png');
         this.UIimages[1] = new ig.Image('media/hexCircleOutside.png');
 
+        setTimeout(function() {
+            // set to be in "Play" mode
+            self.enterEditMode(false);
+        }, 1);
     },
 	
 	update: function() {
@@ -77,55 +84,61 @@ MyGame = ig.Game.extend({
 
         // check and handle for user input
         if( ig.input.pressed('leftClick') ) {
-            if (this.uiMoves) {
-                this.handleUIClick();
+            if (this.editMode) {
+
             } else {
-                mx=ig.input.mouse.x;            // screen x,y of the mouse
-                my=ig.input.mouse.y;
-                pos = this.hexboard.findHexAt(mx,my);
-                if (pos) {
-                    // make sure clicked-on hex is "next-to" the player
-                    if (this.hexboard.isNext(pos, this.player.hexat)) {
-                        bd = this.hexboard.getBoardDataAt(pos);
-                        if (bd && bd.bases && bd.bases.length) {
-                            t = this.hexboard.hexcell.baseType;
-                            pMoves.push({action:"move_move", label:"Move"});                      // player MOVE into cell
-                            for(idx=0; idx<bd.bases.length; idx++) {
-                                bas = bd.bases[idx];                                // t.MOVE or t.ROTATE
-                                switch (bas) {
-                                    case t.MOVE:
-                                        pMoves.push({action:"move_push", label:"Push"});          // player PUSH cell
-                                        break;
-                                    case t.ROTATE:
-                                        pMoves.push({action:"move_rotateCW", label:"Right"});       // rotate cell clockwise
-                                        pMoves.push({action:"move_rotateCCW", label: "Left"});      // rotate cell counter-clockwise
-                                        break;
+                if (this.uiMoves) {
+                    this.handleUIClick();
+                } else {
+                    mx=ig.input.mouse.x;            // screen x,y of the mouse
+                    my=ig.input.mouse.y;
+                    pos = this.hexboard.findHexAt(mx,my);
+                    if (pos) {
+                        // make sure clicked-on hex is "next-to" the player
+                        if (this.hexboard.isNext(pos, this.player.hexat)) {
+                            bd = this.hexboard.getBoardDataAt(pos);
+                            if (bd && bd.bases && bd.bases.length) {
+                                t = this.hexboard.hexcell.baseType;
+                                pMoves.push({action:"move_move", label:"Move"});                      // player MOVE into cell
+                                for(idx=0; idx<bd.bases.length; idx++) {
+                                    bas = bd.bases[idx];                                // t.MOVE or t.ROTATE
+                                    switch (bas) {
+                                        case t.MOVE:
+                                            pMoves.push({action:"move_push", label:"Push"});          // player PUSH cell
+                                            break;
+                                        case t.ROTATE:
+                                            pMoves.push({action:"move_rotateCW", label:"Right"});       // rotate cell clockwise
+                                            pMoves.push({action:"move_rotateCCW", label: "Left"});      // rotate cell counter-clockwise
+                                            break;
+                                    }
                                 }
+                                // @TODO: remove actions from the array that can't be done (i.e. can't push into a solid cell ...)
+                                // @TODO: order the actions in a known order (move, push ,rotate)
+                                // @TODO: remove duplicate actions (two push actions)
+                                this.uiMoves = pMoves;
+                                this.hexboard.calcHexTop(pos);                  // pos.tx,pos.ty
+                                pos.tx += this.hexboard.xAdd/2;                 // alter pixel position to be top/center
+                                this.uiPos = pos;
+                                console.log(this.uiMoves);
+                            } else {
+                                // just move the player to the cell clicked on
+                                this.uiMoves = undefined;
+                                this.player.moveToHex(pos);
                             }
-                            // @TODO: remove actions from the array that can't be done (i.e. can't push into a solid cell ...)
-                            // @TODO: order the actions in a known order (move, push ,rotate)
-                            // @TODO:  remove duplicate actions (two push actions)
-                            this.uiMoves = pMoves;
-                            this.hexboard.calcHexTop(pos);                  // pos.tx,pos.ty
-                            pos.tx += this.hexboard.xAdd/2;                 // alter pixel position to be top/center
-                            this.uiPos = pos;
-                            console.log(this.uiMoves);
-                        } else {
-                            // just move the player to the cell clicked on
-                            this.uiMoves = undefined;
-                            this.player.moveToHex(pos);
                         }
                     }
                 }
             }
         }
-        // check for keyboard request to move in a given direction
-        if (ig.input.pressed('dir0')) this.tryMoveDir(0);
-        if (ig.input.pressed('dir1')) this.tryMoveDir(1);
-        if (ig.input.pressed('dir2')) this.tryMoveDir(2);
-        if (ig.input.pressed('dir3')) this.tryMoveDir(3);
-        if (ig.input.pressed('dir4')) this.tryMoveDir(4);
-        if (ig.input.pressed('dir5')) this.tryMoveDir(5);
+        if (!this.editMode) {
+            // check for keyboard request to move in a given direction
+            if (ig.input.pressed('dir0')) this.tryMoveDir(0);
+            if (ig.input.pressed('dir1')) this.tryMoveDir(1);
+            if (ig.input.pressed('dir2')) this.tryMoveDir(2);
+            if (ig.input.pressed('dir3')) this.tryMoveDir(3);
+            if (ig.input.pressed('dir4')) this.tryMoveDir(4);
+            if (ig.input.pressed('dir5')) this.tryMoveDir(5);
+        }
 
 		// Add your own, additional update code here
         this.hexboard.update();
@@ -248,38 +261,38 @@ MyGame = ig.Game.extend({
         return Math.floor(Math.random() * max);
     },
 
-    tryAjax: function() {
-        console.log("Testing...");
-        var url = "rest/board/102";            // GET board#1234
-        $.getJSON(url, function(data) {
-            // data = JSON for board#101
-            console.log(data);
-        });
-//        $.ajax({
-//            type: "GET",
-//            url: url,
-//            async: true,
-//            beforeSend: function(x) {
-//                if(x && x.overrideMimeType) {
-//                    x.overrideMimeType("application/j-son;charset=UTF-8");
-//                }
-//            },
-//            dataType: "json",
-//            success: function(data){
-//                console.log(data);
-//            }
+//    tryAjax: function() {
+//        console.log("Testing...");
+//        var url = "rest/board/102";            // GET board#1234
+//        $.getJSON(url, function(data) {
+//            // data = JSON for board#101
+//            console.log(data);
 //        });
-        $.post('rest/board', {a:1, b:2, c:"Hello"},
-            function(data){
-                // data POSTed
-                var boardN = parseInt(data, 10);      // newly created board
-                console.log(boardN);
-            }, 'json');
-        $.post('rest/board/102', {a:1, b:2, c:"Hello 102"},
-            function(data){
-                console.log("102 changed");
-            }, 'json');
-    },
+////        $.ajax({
+////            type: "GET",
+////            url: url,
+////            async: true,
+////            beforeSend: function(x) {
+////                if(x && x.overrideMimeType) {
+////                    x.overrideMimeType("application/j-son;charset=UTF-8");
+////                }
+////            },
+////            dataType: "json",
+////            success: function(data){
+////                console.log(data);
+////            }
+////        });
+//        $.post('rest/board', {a:1, b:2, c:"Hello"},
+//            function(data){
+//                // data POSTed
+//                var boardN = parseInt(data, 10);      // newly created board
+//                console.log(boardN);
+//            }, 'json');
+//        $.post('rest/board/102', {a:1, b:2, c:"Hello 102"},
+//            function(data){
+//                console.log("102 changed");
+//            }, 'json');
+//    },
 
     saveBoard: function(boardN) {
         console.log("SAVE OVER board#"+boardN);
@@ -324,6 +337,25 @@ MyGame = ig.Game.extend({
                 break;
         }
     },
+    doUserEdit: function(elHide, elShow, evt) {
+        if (elHide) {
+            elHide.style.display = "none";
+        }
+        if (elShow) {
+            elShow.style.display = "block";
+        }
+        this.enterEditMode(evt === "edit");
+    },
+    enterEditMode: function(bool) {
+        this.editMode = bool;                               // set editing mode
+        if (bool) {
+            // USER REQUESTING TO ENTER EDITING MODE
+            this.hexboard.setJSON(this.savedBoard);         // restore the last saved board, before user player it
+        } else {
+            // USER REQUESTING TO ENTER PLAY MODE
+            this.savedBoard = this.hexboard.getJSON();      // save the board just edited, befoe user starts playing it
+        }
+    },
 
     zLastItem: 0
 });
@@ -336,6 +368,11 @@ UT.onClick = function(evt, id) {
     var el = document.getElementById(id);
     var boardN = parseInt(el.value, 10);
     UT.THEgame.doUserEvent(evt, boardN, el);
+};
+UT.onClickEdit = function(evt, idHide, idShow) {
+    var elHide = document.getElementById(idHide);
+    var elShow = document.getElementById(idShow);
+    UT.THEgame.doUserEdit(elHide, elShow, evt);
 };
 
 // DEBUG DEBUG DEBUG

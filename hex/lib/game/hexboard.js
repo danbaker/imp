@@ -128,7 +128,7 @@ MyHexBoard = ig.Class.extend({
                     bd = json.brd[x][y];
                     // convert strings into numbers
                     bd.type = parseInt(bd.type, 10);
-                    bd.down = (bd.down == "true"? true : false);
+                    bd.down = (bd.down || bd.down == "true"? true : false);
                     bd.rotate = parseInt(bd.rotate, 10);
                     if (bd.bases) {
                         for(i=0; i<bd.bases.length; i++) {
@@ -154,7 +154,7 @@ MyHexBoard = ig.Class.extend({
                     for(i=0; i<seq.need.length; i++) {
                         need = seq.need[i];
                         // need = {down:true, cells:[{ix:2,iy:7},{ix:2,iy:6}]};        // 2 switches DOWN
-                        need.down = (need.down == "true"? true:false);
+                        need.down = (need.down || need.down === "true"? true:false);
                         if (need.cells) {
                             for(ic=0; ic<need.cells.length; ic++) {
                                 var qqq = need.cells[ic];
@@ -334,7 +334,7 @@ MyHexBoard = ig.Class.extend({
                     // sequence was triggered (all needs are currently met) AND brdData was included in those needs to be met
                     // TODO: trigger event!
                     // TODO: walk the entire "operate" list ... and fire event on each brdData
-                    console.log("SEQUENCE JUST TRIGGERED");
+                    console.log("SEQUENCE JUST TRIGGERED. seq#"+idx+" event="+seq.event);
                     if (seq.operate) {
                         for(i=0; i<seq.operate.length; i++) {
                             bd = seq.operate[i];
@@ -384,8 +384,11 @@ MyHexBoard = ig.Class.extend({
         if (iy !== undefined) {
             pos = {ix:pos, iy:iy};
         }
-        if (pos.ix >= 0 && pos.ix < this.brdWide && pos.iy >= 0 && pos.iy < this.brdHigh) {
-            return this.brd[pos.ix][pos.iy];
+
+        if (pos) {
+            if (pos.ix >= 0 && pos.ix < this.brdWide && pos.iy >= 0 && pos.iy < this.brdHigh) {
+                return this.brd[pos.ix][pos.iy];
+            }
         }
         // requested something that is OFF the board ... return a known "Edge" object
         return this.hexcell.brdData[0];

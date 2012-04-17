@@ -29,9 +29,17 @@
 </head>
 <body>
 	<canvas id="canvas"></canvas>
+
+    <div id="playSection" style="display: block">
+    <button type="button" onclick="UT.onClickEdit('edit', 'playSection', 'editSection');">Edit</button><br>
+    </div>
+
+    <div id="editSection" style="display: none">
+    <button type="button" onclick="UT.onClickEdit('play', 'editSection', 'playSection');">Play</button><br>
     <input type="text" id="inputNumber" size=3 value="1"><br>
     <button type="button" onclick="UT.onClick('load', 'inputNumber');">Load</button><br>
     <button type="button" onclick="UT.onClick('save', 'inputNumber');">Save</button><br>
     <button type="button" onclick="UT.onClick('create', 'inputNumber');">Create</button><br>
+    </div>
 </body>
 </html>
