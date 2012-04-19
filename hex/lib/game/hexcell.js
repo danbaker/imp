@@ -51,9 +51,11 @@ HexCell = ig.Class.extend({
 
         this.brdType.MOVE = 101;
         this.brdType.ROTATE = 102;
+        this.brdType.KICK = 103;
 
         this.baseType.MOVE = this.brdType.MOVE;         // this brd cell can be moved(pushed) around by the player
         this.baseType.ROTATE = this.brdType.ROTATE;     // this brd cell can be rotate by the player
+        this.baseType.KICK = this.brdType.KICK;         // this brd cell can be kicked by the player
 
         this.imgSwitch = new ig.AnimationSheet( 'media/hexRowSwitch.png', 56, 65 );
         this.imgWall = new ig.AnimationSheet( 'media/hexRowWall.png', 56, 65 );
@@ -63,6 +65,7 @@ HexCell = ig.Class.extend({
 
         this.brdImages[this.brdType.MOVE] = new ig.Image('media/hexMove.png');
         this.brdImages[this.brdType.ROTATE] = new ig.Image('media/hexRotate.png');
+        this.brdImages[this.brdType.KICK] = new ig.Image('media/hexKick.png');
     },
 
     // build/create the entire set/collection of constant board-data information

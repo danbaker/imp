@@ -110,6 +110,9 @@ MyGame = ig.Game.extend({
                                             pMoves.push({action:"move_rotateCW", label:"Right"});       // rotate cell clockwise
                                             pMoves.push({action:"move_rotateCCW", label: "Left"});      // rotate cell counter-clockwise
                                             break;
+                                        case t.KICK:
+                                            pMoves.push({action:"move_kick", label:"Kick"});          // player KICK cell
+                                            break;
                                     }
                                 }
                                 // @TODO: remove actions from the array that can't be done (i.e. can't push into a solid cell ...)
@@ -231,6 +234,9 @@ MyGame = ig.Game.extend({
                 break;
             case "move_push":
                 this.player.pushToHex(this.uiPos);
+                break;
+            case "move_kick":
+                // @TODO: start the piece @uiPos moving!
                 break;
             case "move_rotateCW":
                 break;
