@@ -30,9 +30,6 @@ GameEvents = ig.Class.extend({
     // a board-related event (like player just crossed an edge into a new hex)
     brdEvent: function(evt, data) {
         var pos = data.hex;                                     // board-hex event happened with
-        if (!pos) {
-            var DANB = 1;
-        }
         var evtParts = evt.split(":");                          // [0]="BRD", [1]="PlayerEntered"
         if (evtParts.length > 1 && pos) {
             var fncName = "event_"+evtParts[1];                 // "event_PlayerEntered"

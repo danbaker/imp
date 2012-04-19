@@ -81,28 +81,69 @@ HexCell = ig.Class.extend({
                 build: function() {
                     this.anim1 = new UT.Anim( self.imgSwitch, 0.03, [3,2,1,0,1,2,3,4,5,6,7,8], true, "SwitchUp" );
                     this.anim2 = new UT.Anim( self.imgSwitch, 0.03, [8,7,6,5,4,3,2,1,0,1,2,3], true, "SwitchDown" );
+                    this.animStepOnWasUp     = new UT.Anim( self.imgSwitch, 0.03, [8,7,6,5,4,3,2,1,0],  true, "SwitchStepOnWasUp" );
+                    this.animStepOnWasDown   = new UT.Anim( self.imgSwitch, 0.03, [3,2,1,0],            true, "SwitchStepOnWasDown" );
+                    this.animStepOffStayDown = new UT.Anim( self.imgSwitch, 0.03, [0,1,2,3],            true, "SwitchStepOffStayDown" );
+                    this.animStepOffGoUp     = new UT.Anim( self.imgSwitch, 0.03, [0,1,2,3,4,5,6,7,8],  true, "SwitchStepOffGoUp" );
+                    this.anims = [this.anim1, this.anim2, this.animStepOnWasUp,this.animStepOnWasDown, this.animStepOffStayDown, this.animStepOffGoUp];
                     this.anim = this.down? this.anim2 : this.anim1;
                     this.anim.gotoFrame(20);                      // start switch at the ending-anim (already depressed)
                 },
                 event_PlayerEntered: function() {
-                    if (!this.down) {
-                        this.anim = this.anim2;         // switch is up ... anim2 shows the switch going down
+                    if (false) {
+                        // OLD Yucky animations
+                        if (!this.down) {
+                            this.anim = this.anim2;         // switch is up ... anim2 shows the switch going down
+                        } else {
+                            this.anim = this.anim1;
+                        }
                     } else {
-                        this.anim = this.anim1;
+                        // NEW awesome animations
+                        if (!this.down) {
+                            this.anim = this.animStepOnWasUp;           // player stepped into Switch hex, and switch is UP (going down, then staying down when player leaves)
+                        } else {
+                            this.anim = this.animStepOnWasDown;         // player stepped into Switch hex, and switch is DOWN (going down, then up when player leaves)
+                        }
                     }
                     this.anim.gotoFrame(0);
                     this.anim.rewind();
                     this.anim.start();          // fire "animation started event"
                 },
-                event_SwitchUp: function(data) {
+                event_PlayerLeaving: function() {
+                    if (this.anim === this.animStepOnWasUp) {
+                        this.anim = this.animStepOffStayDown;       // player stepping off Switch. switch was UP, will stay down
+                    } else if (this.anim === this.animStepOnWasDown) {
+                        this.anim = this.animStepOffGoUp;           // player stepping off Switch. switch was DOWN, will go up now
+                    }
+                    this.anim.gotoFrame(0);
+                    this.anim.rewind();
+                    this.anim.start();          // fire "animation started event"
+                },
+                event_SwitchUp: function(data) {        // OLD
                     if (data.done) {
                         this.down = false;                      // switch is now UP
                         self.hexboard.checkSequences(this);
                     }
                 },
-                event_SwitchDown: function(data) {
+                event_SwitchDown: function(data) {      // OLD
                     if (data.done) {
                         this.down = true;                       // switch it now DOWN
+                        self.hexboard.checkSequences(this);
+                    }
+                },
+                event_SwitchStepOnWasUp: function(data) {
+                    console.log("Step ON ... was UP");
+                    if (data.done) {
+                        // Player already stepped onto a switch which was UP. Switch finished animating to the DOWN position.
+                        this.down = true;                       // switch is now DOWN
+                        self.hexboard.checkSequences(this);
+                    }
+                },
+                event_SwitchStepOffGoUp: function(data) {
+                    console.log("Step OFF ... was DOWN");
+                    if (data.done) {
+                        // Player has left the hex. Switch has animated all the way UP.
+                        this.down = false;
                         self.hexboard.checkSequences(this);
                     }
                 }
@@ -111,6 +152,7 @@ HexCell = ig.Class.extend({
                 build: function() {
                     this.anim1 = new UT.Anim( self.imgWall, 0.15, [0,1,2,3,4,5,6,7,8,9], true, "WallUp" );
                     this.anim2 = new UT.Anim( self.imgWall, 0.15, [9,8,7,6,5,4,3,2,1,0], true, "WallDown" );
+                    this.anims = [this.anim1, this.anim2];
                     this.anim = this.down? this.anim2 : this.anim1;
                     this.anim.gotoFrame(20);
                 },
@@ -166,6 +208,7 @@ HexCell = ig.Class.extend({
                 build: function() {
                     this.anim1 = new UT.Anim( self.imgPlate, 0.03, [0,1,2,3,4], true, "SwitchUp" );
                     this.anim2 = new UT.Anim( self.imgPlate, 0.03, [4,3,2,1,0], true, "SwitchDown" );
+                    this.anims = [this.anim1, this.anim2];
                     this.anim = this.down? this.anim2 : this.anim1;
                     //this.anim.gotoFrame(20);                      // start switch at the ending-anim (already depressed)
                 },
@@ -211,7 +254,14 @@ HexCell = ig.Class.extend({
             bd.isPlayerOn = function() {
                 // return false if player is NOT on (or walking into) this hex-cell
                 return (self.player.isPlayerOn(this) || self.player.isPlayerHeadedTo(this));
-            }
+            };
+            bd.setPos = function(x,y) {
+                if (this.anims) {
+                    for(var i=0; i<this.anims.length; i++) {
+                        this.anims[i].setPos(x,y);
+                    }
+                }
+            };
         }
     },
 

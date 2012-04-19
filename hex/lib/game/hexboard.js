@@ -188,11 +188,8 @@ MyHexBoard = ig.Class.extend({
         }
         if (x !== undefined && y !== undefined) {
             this.brd[x][y] = brdData;
-            if (brdData.anim1) {
-                brdData.anim1.setPos(x,y);
-            }
-            if (brdData.anim2) {
-                brdData.anim2.setPos(x,y);
+            if (brdData.setPos) {
+                brdData.setPos(x,y);
             }
         }
         brdData.uid = {ix:x,iy:y};                      // this describes the ORIGINAL location, it is NOT keep up-to-date
