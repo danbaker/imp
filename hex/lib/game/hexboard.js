@@ -186,6 +186,17 @@ MyHexBoard = ig.Class.extend({
         if (brdData.build) {
             brdData.build();
         }
+        brdData.anims = [];
+        for(key in brdData) {
+            if (brdData.hasOwnProperty(key)) {
+                if (key.substring(0,5) === "anim_") {
+                    brdData.anims.push(brdData[key]);
+                }
+            }
+        }
+
+
+
         if (x !== undefined && y !== undefined) {
             this.brd[x][y] = brdData;
             if (brdData.setPos) {
