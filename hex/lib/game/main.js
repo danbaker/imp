@@ -17,6 +17,7 @@ ig.module(
 	'impact.font',
     'game.hexboard',
     'game.entities.player',
+    'game.entities.kicker',
     'game.gameevents'
 )
 .defines(function(){
@@ -168,6 +169,7 @@ MyGame = ig.Game.extend({
         }
         this.hexboard.draw();
         this.player.draw();
+        if (this.DANB1) this.DANB1.draw();
 
         this.drawUI();
 
@@ -237,6 +239,26 @@ MyGame = ig.Game.extend({
                 break;
             case "move_kick":
                 // @TODO: start the piece @uiPos moving!
+//                if (!this.DANB1) {
+//                    this.DANB1 = new EntityKicker(this.uiPos.ix+1,this.uiPos.iy-1, {hexboard:this.hexboard} );
+//                    this.hexboard.calcHexCenter(this.uiPos);
+//                    this.DANB1.snapToHex(this.uiPos);
+//                }
+                var bd = this.hexboard.getBoardDataAt(this.uiPos);
+                if (bd) {
+                    var dir = this.hexboard.calcDir(this.player.hexat, this.uiPos);
+                    if (dir !== undefined) {
+                        if (!bd.kicking) {
+                            // change the board-data at uiPos to start moving
+                            bd.kicking = {
+                                dir: dir,
+                                dx: 0, dy: 0,
+                                baseID: this.hexboard.hexcell.baseType.KICK
+                            };
+                        }
+                    }
+                }
+
                 break;
             case "move_rotateCW":
                 break;

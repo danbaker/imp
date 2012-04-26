@@ -237,7 +237,7 @@ MyHexBoard = ig.Class.extend({
         this.brd[2][7] = this.buildOneHex(t.SWITCH, 2,7, {down:false});
         this.brd[2][6] = this.buildOneHex(t.SWITCH, 2,6, {down:false});
         this.brd[1][5] = this.buildOneHex(t.SWITCH, 1,5, {down:true});
-        this.brd[3][6] = this.buildOneHex(t.WALL, 3,6, {down:false, solid:true, bases:[t.KICK, t.ROTATE]});
+        this.brd[3][6] = this.buildOneHex(t.WALL, 3,6, {down:false, solid:true, bases:[t.ROTATE, t.KICK]});
         this.brd[4][8] = this.buildOneHex(t.WALL, 4,8, {down:false, solid:true, rotate:2, bases:[t.MOVE]});
         this.brd[5][7] = this.buildOneHex(t.PLATE, 5,7, {down:false, operate:[{ix:4,iy:8}]});
         this.brd[3][7] = this.buildOneHex(t.FLOOR, 3,7, {bases:[t.ROTATE]});
@@ -359,14 +359,63 @@ MyHexBoard = ig.Class.extend({
     },
 
 	update: function() {
-		// Add your own, additional update code here
-        // TODO: animate board items (like switches and water)
-        var x,y, brdData;
+        // animate board items (like switches and water)
+        var x,y,
+            brdData,
+            brdDataTo,
+            pos, posTo,
+            dx,dy,
+            speed,
+            k;
         for(x=0; x<this.brdWide; x++) {
             for(y=0; y<this.brdHigh; y++) {
                 brdData = this.brd[x][y];
                 if (brdData.anim) {
                     brdData.anim.update();
+                }
+                if (brdData.kicking) {
+                    k = brdData.kicking;
+                    // use kicking.dir to alter kicking.dx,dy
+                    if (!brdData.kicking.dxdy) {
+                        // create cache data needed to kick in direction given
+                        pos = {ix:x,iy:y};
+                        posTo = {ix:x,iy:y};
+                        this.moveDir(posTo, brdData.kicking.dir);
+                        brdDataTo =this.getBoardDataAt(posTo);
+                        if (brdDataTo.type === this.hexcell.brdType.FLOOR) {         // MUST be moving onto FLOOR
+                            this.calcHexTop(pos);
+                            this.calcHexTop(posTo);
+                            dx = (pos.tx - posTo.tx);
+                            dy = (pos.ty - posTo.ty);
+                            speed = 15;
+                            k.dxdy = {dx:dx/speed,dy:dy/speed,adx:Math.abs(dx),ady:Math.abs(dy)};
+                        } else {
+                            // CAN'T kick
+                            brdData.kicking = undefined;
+                        }
+                    }
+                    if (brdData.kicking) {
+                        k.dx -= k.dxdy.dx;
+                        k.dy -= k.dxdy.dy;
+                        if (k.dx > k.dxdy.adx || k.dx < -k.dxdy.adx || k.dy > k.dxdy.ady || k.dy < -k.dxdy.ady) {
+                            // DONE WITH KICK TO THE NEXT CELL
+                            // NOTE: remove the items from the previous cell, add them to the new cell
+                            // move KICKING info from cell to new cell
+                            // @TODO: WORK HERE ...
+                            pos = {ix:x,iy:y};
+                            posTo = {ix:x,iy:y};
+                            this.moveDir(posTo, brdData.kicking.dir);
+                            brdDataTo =this.getBoardDataAt(posTo);
+                            if (brdDataTo) {
+                                // @TODO: swap brdData between the two spots
+                                // @TODO: move .base items back to the original place
+                                this._doPushHex(pos, brdData, posTo, brdDataTo, this.hexcell.baseType.KICK);
+                                brdData.kicking.dxdy = undefined;
+                                k.dx = k.dy = 0;
+                            }
+//                            brdData.kicking = undefined;    // DEBUG
+                        }
+                    }
                 }
             }
         }
@@ -547,7 +596,7 @@ MyHexBoard = ig.Class.extend({
                     for(i=0; i<bdFrom.bases.length; i++) {
                         base = bdFrom.bases[i];
                         if (base === this.hexcell.baseType.MOVE) {  // MUST be moving FROM a cell that has a MOVE-base
-                            return this._doPushHex(posFrom, bdFrom, posTo, bdTo, dir);
+                            return this._doPushHex(posFrom, bdFrom, posTo, bdTo, this.hexcell.baseType.MOVE);
                         }
                     }
                 }
@@ -560,28 +609,28 @@ MyHexBoard = ig.Class.extend({
     //      bdFrom      = actual board-data to PUSH
     //      posTo       = cell-position of the cell to push INTO
     //      bdTo        = actial board-data to REPLACE
-    //      dir         = direction pushing cell in (0..5)
     // return true IF push started
-    _doPushHex: function(posFrom, bdFrom, posTo, bdTo, dir) {
+    _doPushHex: function(posFrom, bdFrom, posTo, bdTo, baseType) {
         var basesDest = [],             // new bases for the destination cell
             basesSrc = [],              // new bases for the source cell
             i,
             base,
             copyToDest;
-        // TODO: set up an animation so the hex "moves" from "posFrom" to "posTo"
+        if (!bdTo) bdTo = this.getBoardDataAt(posTo);
+        if (!bdFrom) bdFrom = this.getBoardDataAt(posFrom);
         // TODO: leave all base's that are below the MOVE base (put them in the bdTo, remove them from bdFrom)
         this.brd[posTo.ix][posTo.iy] = bdFrom;
         this.brd[posFrom.ix][posFrom.iy] = bdTo;
         for(i=0; i<bdTo.bases.length; i++) {
             base = bdTo.bases[i];
-            if (base !== this.hexcell.baseType.MOVE) {
+            if (base !== baseType) {
                 basesDest.push(base);
             }
         }
         copyToDest = false;
         for(i=0; i<bdFrom.bases.length; i++) {
             base = bdFrom.bases[i];
-            if (base === this.hexcell.baseType.MOVE || copyToDest) {
+            if (base === baseType || copyToDest) {
                 basesDest.push(base);
                 copyToDest = true;
             } else {
@@ -611,11 +660,15 @@ MyHexBoard = ig.Class.extend({
             x,y,                            // hex screen x,y (not adjusted for odd rows)
             ix,iy,
             tx,ty,                          // hex top screen x,y of the hex (adjusted for odd rows)
+            hx,hy,                          // hover x,y
             mouseHover,
             row = true,
             bi,                             // base-index (index into the .base array)
             brdData,                        // board-data object
-            img;
+            img,
+            kicking,                        // kicking object { baseID, dir, dx,dy }
+            saving,                         // true means to save images into the "drawLater" array
+            drawLater = [];                 // array of objects describing what to draw later { img, tx, ty }
 
         if (this.uiShowing) {
             mx = my = -12345;
@@ -624,6 +677,8 @@ MyHexBoard = ig.Class.extend({
         for(iy=0, y=this.offset.y; y<this.brdPixelHigh; y+= this.yAdd, iy++) {
             for(ix=0, x=this.offset.x; x<this.brdPixelWide; x+= this.xAdd, ix++) {
                 brdData = this.getBoardDataAt(ix,iy);
+                kicking = brdData.kicking;
+                saving = false;
 //                if (this.tick && brdData.rotate) {
 //                    brdData.rotate++;
 //                    if (brdData.rotate > 5) brdData.rotate = 1;
@@ -637,6 +692,8 @@ MyHexBoard = ig.Class.extend({
                         // mouse is *possibly* over this hex
                         if (this.isPointInHex(mx,my, tx,ty)) {
                             mouseHover = true;
+                            hx = tx;
+                            hy = ty;
                         }
                     }
                 }
@@ -647,20 +704,45 @@ MyHexBoard = ig.Class.extend({
                 if (brdData.bases) {
                     for(bi=0; bi<brdData.bases.length; bi++) {
                         img = this.hexcell.brdImages[brdData.bases[bi]];
-                        if (img) img.draw(tx,ty);
+                        if (kicking && kicking.baseID === brdData.bases[bi]) {
+                            // just found the base that is moving/kicking OUT of this cell
+                            tx += kicking.dx;
+                            ty += kicking.dy;
+                            kicking = undefined;
+                            saving = true;
+                        }
+                        if (img) {
+                            if (saving) {
+                                drawLater.push({img:img, tx:tx, ty:ty});
+                            } else {
+                                img.draw(tx,ty);
+                            }
+                        }
                     }
                 }
                 // 3) draw animated object
                 if (brdData.anim) {
-                    brdData.anim.angle = Math.PI*2/6 * brdData.rotate;
-                    brdData.anim.draw(tx,ty);
+                    if (saving) {
+                        brdData.anim.angle = 0;
+                        drawLater.push({img:brdData.anim, tx:tx, ty:ty, angle:Math.PI*2/6 * brdData.rotate});
+                    } else {
+                        brdData.anim.angle = Math.PI*2/6 * brdData.rotate;
+                        brdData.anim.draw(tx,ty);
+                    }
                 }
                 // 4) draw the "hover" image last
                 if (mouseHover) {
-                    this.imgHover.draw(tx, ty);
+                    this.imgHover.draw(hx, hy);
                 }
             }
             row = !row;
+        }
+        for(iy=0; iy<drawLater.length; iy++) {
+            ix = drawLater[iy];
+            if (ix.angle) {
+                ix.img.angle = ix.angle;
+            }
+            ix.img.draw(ix.tx,ix.ty);
         }
 	},
 

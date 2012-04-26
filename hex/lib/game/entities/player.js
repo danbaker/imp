@@ -16,6 +16,7 @@ EntityPlayer = ig.Entity.extend({
     flip: false,                        // true means walking left
     maxVel: {x: 350, y: 350},
     pubsub: UT.PubSub.getInstance(),
+    isPlayer: true,
 
 
     // HexGame properties (nx,ny) is hex-number, (cx,cy) is center-pixel
@@ -24,16 +25,20 @@ EntityPlayer = ig.Entity.extend({
     hexat: {ix: 5, iy: 5},  // where the player is at (IF !hexdest)
 
 	init: function( x, y, settings ) {
+        if (settings.notPlayer) {
+            this.isPlayer = false;
+        }
 		this.parent( x, y, settings );
         this.setPos(x,y);
 
-        this.addAnim( 'idle', 1, [0] );
-        this.addAnim( 'run', 0.07, [0,1,2,3,4,5] );
-        this.addAnim( 'jump', 1, [9] );
-        this.addAnim( 'fall', 0.4, [6,7] );
-
         this.hexboard = settings.hexboard;
-        this.hexboard.hexcell.setPlayerDelegate(this);
+        if (this.isPlayer) {
+            this.addAnim( 'idle', 1, [0] );
+            this.addAnim( 'run', 0.07, [0,1,2,3,4,5] );
+            this.addAnim( 'jump', 1, [9] );
+            this.addAnim( 'fall', 0.4, [6,7] );
+            this.hexboard.hexcell.setPlayerDelegate(this);
+        }
 	},
 
 
@@ -68,8 +73,10 @@ EntityPlayer = ig.Entity.extend({
             if (!this.hexdest.entered && !this.hexboard.isPointInHex(this.pos.x,this.pos.y,this.hexat)) {
                 // LEFT the original hex / ENTERED the destination hex
                 this.hexdest.entered = true;
-                this.pubsub.publish("BRD:PlayerExited", {hex:this.hexat});
-                this.pubsub.publish("BRD:PlayerEntered", {hex:this.hexdest});
+                if (this.isPlayer) {
+                    this.pubsub.publish("BRD:PlayerExited", {hex:this.hexat});
+                    this.pubsub.publish("BRD:PlayerEntered", {hex:this.hexdest});
+                }
             }
             // 2) check if player has arrived at the center of the destination hex (done moving)
             dx = this.hexdest.cx - this.pos.x;
@@ -123,7 +130,9 @@ EntityPlayer = ig.Entity.extend({
                 this.vel.y = dy * mult;
                 this.flip = (dx < 0);
                 this.currentAnim = this.anims.run;
-                this.pubsub.publish("BRD:PlayerLeaving", {hex:this.hexat});
+                if (this.isPlayer) {
+                    this.pubsub.publish("BRD:PlayerLeaving", {hex:this.hexat});
+                }
             }
         }
     },
@@ -136,7 +145,9 @@ EntityPlayer = ig.Entity.extend({
         this.hexat = pos;                   // save location at
         this.hexdest = undefined;           // clear the "destination hex"
         this.currentAnim = this.anims.idle; // stand still
-        this.pubsub.publish("BRD:PlayerStanding", {hex:this.hexat});
+        if (this.isPlayer) {
+            this.pubsub.publish("BRD:PlayerStanding", {hex:this.hexat});
+        }
     }
 
 });
