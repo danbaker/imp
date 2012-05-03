@@ -89,6 +89,12 @@ HexCell = ig.Class.extend({
                     this.anim = this.down? this.anim_StepOffStayDown : this.anim_StepOffGoUp;
                     this.anim.gotoFrame(20);                      // start switch at the ending-anim (already depressed)
                 },
+                event_HexEntered: function() {
+                    this.event_PlayerEntered();
+                },
+                event_HexLeavingCenter: function() {
+                    this.event_PlayerLeaving();
+                },
                 event_PlayerEntered: function() {
                     this.startAnim(this.down? this.anim_StepOnWasDown : this.anim_StepOnWasUp);
                 },
@@ -114,6 +120,7 @@ HexCell = ig.Class.extend({
                 event_SwitchStepOnWasUp: function(data) {
                     if (data.done) {
                         // Player already stepped onto a switch which was UP. Switch finished animating to the DOWN position.
+                        console.log("Switch now DOWN.  checking sequences");
                         this.down = true;                       // switch is now DOWN
                         this.checkSequences();
                     }
@@ -121,6 +128,7 @@ HexCell = ig.Class.extend({
                 event_SwitchStepOffGoUp: function(data) {
                     if (data.done) {
                         // Player has left the hex. Switch has animated all the way UP.
+                        console.log("Switch now UP.  checking sequences");
                         this.down = false;
                         this.checkSequences();
                     }
@@ -230,6 +238,10 @@ HexCell = ig.Class.extend({
             };
             bd.startAnim = function(a, force) {
                 if (this.anim !== a || force) {
+                    // make sure to play the event of the current anim finishing
+                    if (this.anim && this.anim.abortAnimNow) {
+                        this.anim.abortAnimNow();
+                    }
                     this.anim = a;
                     this.anim.gotoFrame(0);
                     this.anim.rewind();

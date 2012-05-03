@@ -33,12 +33,15 @@ GameEvents = ig.Class.extend({
         var evtParts = evt.split(":");                          // [0]="BRD", [1]="PlayerEntered"
         if (evtParts.length > 1 && pos) {
             var fncName = "event_"+evtParts[1];                 // "event_PlayerEntered"
-            var brdData = this.hexboard.getBoardDataAt(pos);    // brdData = the hex this event happened in
+            var stk = this.hexboard.getBoardStackAt(pos);    // brdData = the hex this event happened in
             this.log("GameEvent: "+evt+" hex("+pos.ix+","+pos.iy+") "+(data.done?"DONE":"")+"  "+(data.start?"START":""));
-            if (brdData) {
-                if (brdData[fncName]) {
-                    // call event on the hex on the board
-                    brdData[fncName](data);
+            for(var si=0; si<stk.length; si++) {
+                var brdData = stk[si];
+                if (brdData) {
+                    if (brdData[fncName]) {
+                        // call event on the hex on the board
+                        brdData[fncName](data);
+                    }
                 }
             }
         }

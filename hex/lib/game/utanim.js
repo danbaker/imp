@@ -22,12 +22,19 @@ UT.Anim = ig.Animation.extend({
 	},
 
     setPos: function(ix,iy) {
+        if (iy === undefined) {
+            iy = ix.iy;
+            ix = ix.ix;
+        }
         this.pos = {ix:ix, iy:iy};
     },
 
     update: function() {
         this.parent();
+        this.checkEventFire();
+    },
 
+    checkEventFire: function() {
         // check if this animation just finished
         if (!this.doneEventFired && this.frame >= this.sequence.length-1) {
             this.doneEventFired = true;
@@ -38,6 +45,11 @@ UT.Anim = ig.Animation.extend({
                 this.pubsub.publish(this.eventName, data);
             }
         }
+    },
+
+    abortAnimNow: function() {
+        this.frame = this.sequence.length-1;
+        this.checkEventFire();
     },
 
     start: function() {
