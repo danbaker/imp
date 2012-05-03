@@ -502,6 +502,14 @@ MyHexBoard = ig.Class.extend({
         var stk = this.getBoardStackAt(pos,iy);
         return stk[stk.length-1];
     },
+    setBoardDataAt: function(pos, typ) {
+        var t = this.hexcell.brdType;
+        this.brd[pos.ix][pos.iy] = [];
+        if (typ !== t.FLOOR) {
+            this.buildOneHex(t.FLOOR, pos.ix,pos.iy);
+        }
+        this.buildOneHex(typ, pos.ix,pos.iy);
+    },
 
 
     // // // // // // // // // // //
